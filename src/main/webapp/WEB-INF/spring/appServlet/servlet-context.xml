@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+	
+	<interceptors>
+		<interceptor>
+			<mapping path="/**"/>
+			
+			<exclude-mapping path="/"/>
+			<exclude-mapping path="/mainBannerNew"/>
+			<exclude-mapping path="/login*"/>
+			<exclude-mapping path="/signup*"/>
+			<exclude-mapping path="/idCheck*"/>
+			<exclude-mapping path="/nicknameCheck*"/>
+			<exclude-mapping path="/emailCheck*"/>
+			<exclude-mapping path="/certifyEmail*"/>
+			<exclude-mapping path="/resources/**"/>
+			<exclude-mapping path="/asset/**"/>
+			<exclude-mapping path="/assets/**"/>
+			<exclude-mapping path="/imgUpload/**"/>
+			<exclude-mapping path="/imgProfileUpload/**"/>
+			<exclude-mapping path="/findPwd/**"/>
+			<exclude-mapping path="/sendPwd/**"/>
+			
+			<beans:bean id="commonInterceptor" class="kr.ddit.kixiv.intercepter.CommonInterceptor"/>
+		</interceptor>
+	</interceptors>
+	
+	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+	
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	 <resources mapping="/resources/**" location="/resources/" />	 
+	 <resources mapping="/asset/**" location="/resources/asset/" />	 
+	 <resources mapping="/assets_img/**" location="/resources/assets_img/" />	 
+	 <resources mapping="/assets_fund/**" location="/resources/assets_fund/" />	 
+	 <resources mapping="/assets/**" location="/resources/assets/" />
+	 <resources mapping="/notice/assets/**" location="/resources/assets/" />
+	 <resources mapping="/blackUser/assets/**" location="/resources/assets/" />
+	 <resources mapping="/user/assets/**" location="/resources/assets/" />
+	 
+	 <resources mapping="/imgUpload/**" location="/resources/imgUpload/" />
+	 <resources mapping="/imgProfileUpload/**" location="/resources/imgProfileUpload/" />
+	 <resources mapping="/imgGalleryUpload/**" location="/resources/imgGalleryUpload/" />
+	 <resources mapping="/fileUpload/**" location="file:///D:/springProject/kixiv/src/main/webapp/resources/summernote/fileUpload/" />
+	 <resources mapping="/fundImgUpload/**" location="file:///D:/springProject/kixiv/src/main/webapp/resources/fundImgUpload/" />
+	 
+	<beans:bean class="org.springframework.web.servlet.view.BeanNameViewResolver"> <beans:property name="order" value="0"/> </beans:bean>
+
+	<beans:bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"/>
+	
+	
+	
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+		<beans:property name="order" value="1"/>
+	</beans:bean>
+	
+	<beans:bean class="java.lang.String" id="uploadPath">
+	 	<beans:constructor-arg value="D:\springProject\kixiv\src\main\webapp\resources" />
+	</beans:bean>
+	
+	<beans:bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+	 	<beans:property name="maxUploadSize" value="10485760"/>
+	</beans:bean>	
+	
+	<!-- Gmail -->
+	<beans:bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<beans:property name="host" value="smtp.gmail.com" />
+		<beans:property name="port" value="587" />
+		<beans:property name="username" value="team5.tomato@gmail.com" />
+		<beans:property name="password" value="Aasdf!1234" />
+		<beans:property value="utf-8" name="defaultEncoding" />
+		<beans:property name="javaMailProperties">
+		<beans:props>
+			<beans:prop key="mail.smtp.auth">true</beans:prop>
+			<beans:prop key="mail.smtp.starttls.enable">true</beans:prop>
+		</beans:props>
+		</beans:property>
+	</beans:bean>
+	
+	<!-- Naver -->
+<!-- 	<beans:bean	class="org.springframework.mail.javamail.JavaMailSenderImpl" id="mailSender"> -->
+<!-- 		<beans:property value="smtp.naver.com" name="host" /> -->
+<!-- 		<beans:property value="587" name="port" /> -->
+<!-- 		<beans:property name="username" value="hihidaeho" /> -->
+<!-- 		<beans:property name="password" value="shingoha1234"/> -->
+<!-- 		<beans:property value="utf-8" name="defaultEncoding" /> -->
+<!-- 		<beans:property name="javaMailProperties"> -->
+<!-- 			<beans:props> -->
+<!-- 				<beans:prop key="mail.transport.protocol">smtp</beans:prop> -->
+<!-- 				<beans:prop key="mail.smtp.auth">true</beans:prop> -->
+<!-- 				<beans:prop key="mail.smtp.starttls.enable">true</beans:prop> -->
+<!-- 				<beans:prop key="mail.debug">true</beans:prop> -->
+<!-- 			</beans:props> -->
+<!-- 		</beans:property> -->
+<!-- 	</beans:bean> -->
+	<context:component-scan base-package="kr.ddit.kixiv" />
+	
+</beans:beans>

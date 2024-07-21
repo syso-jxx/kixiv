@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.follow.mapper.FollowDao">
+
+<!-- 	<select id="pictureSaveHeart" resultType="int">
+		select COUNT(*) from LIKEY 
+		where PIC_NUM = #{pic_num} AND USER_ID = #{user_id}
+	</select> -->
+	
+	<insert id="followIng">
+	    <!-- 팔로우 -->
+	    insert into FOLLOWING
+	    (FOLLOW_NUM, TO_ID, FROM_ID)
+	    values ((select IFNULL(MAX(FOLLOW_NUM), 0) + 1 from FOLLOWING), #{to_id}, #{from_id})
+	</insert>
+	
+	<delete id="unFollowIng">
+	    <!-- 언팔로우 -->
+	    delete from FOLLOWING
+	    where TO_ID = #{to_id} and FROM_ID = #{from_id}
+	</delete>
+	
+	<select id="followYn" resultType="integer">
+	    select COUNT(*) from FOLLOWING
+	    where TO_ID = #{to_id} and FROM_ID = #{from_id}
+	</select>
+	
+	<select id="getFollowingList" resultType="map">
+	    SELECT F.FOLLOW_NUM as follow_num, 
+	           F.TO_ID as to_id, 
+	           F.FROM_ID as from_id, 
+	           U.NICKNAME as nickname, 
+	           U.PROFILE_IMG as profile_img
+	    FROM FOLLOWING F
+	    JOIN USERS U ON F.FROM_ID = U.USER_ID
+	    WHERE F.TO_ID = #{user_id}
+	    ORDER BY F.FOLLOW_NUM DESC
+	</select>
+	
+</mapper>

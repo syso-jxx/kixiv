@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.blackUser.mapper.BlackUserDao">
+	
+	<select id="blackList" resultType="kr.ddit.kixiv.blackUser.vo.BlackUserVO">
+	    select BLACK_NUM as blackNum, BLACK_REASON as blackReason, BLACK_DATE as blackDate, USER_ID as userId
+	    from(    
+	        select 
+	            BLACK_NUM,
+	            BLACK_REASON,
+	            BLACK_DATE,
+	            USER_ID,
+	            row_number() over(order by BLACK_NUM desc) as rNum
+	        from blackuser
+	        <if test="searchType.equals('id')">
+	            WHERE USER_ID like CONCAT('%', #{keyword}, '%')
+	        </if>
+	        <if test="searchType.equals('reason')">
+	            WHERE BLACK_REASON like CONCAT('%', #{keyword}, '%')
+	        </if>
+	        order by BLACK_DATE desc
+	    ) t
+	    where rNum between #{startPost} and #{endPost}
+	</select>
+	
+	<select id="totalCount" resultType="int">
+	    select count(*)
+	    from blackuser
+	    <if test="searchType.equals('id')">
+	        WHERE USER_ID like CONCAT('%', #{keyword}, '%')
+	    </if>
+	    <if test="searchType.equals('reason')">
+	        WHERE BLACK_REASON like CONCAT('%', #{keyword}, '%')
+	    </if>
+	</select>
+	
+	<delete id="delete">
+	    delete from blackuser
+	    where USER_ID = #{userId}
+	</delete>
+	
+	<update id="modify">
+	    update blackuser
+	    set BLACK_REASON = #{blackReason}
+	    where USER_ID = #{userId}
+	</update>
+	
+	<insert id="blackAdd">
+	    INSERT INTO blackuser
+	    (BLACK_NUM, BLACK_REASON, BLACK_DATE, USER_ID)
+	    VALUES((select IFNULL(MAX(BLACK_NUM), 0) + 1 from blackuser), #{blackReason}, NOW(), #{userId})
+	</insert>
+	
+	<select id="blackCheck" resultType="kr.ddit.kixiv.blackUser.vo.BlackUserVO">
+	    select BLACK_NUM as blackNum, 
+	           BLACK_REASON as blackReason, 
+	           BLACK_DATE as blackDate, 
+	           USER_ID as userId 
+	    from blackuser
+	    where USER_ID = #{userId}
+	</select>
+	
+	<delete id="checkValidUser">
+	    delete from blackuser
+	    where BLACK_NUM in (
+	        select BLACK_NUM 
+	        from (
+	            select BLACK_NUM, DATE_ADD(BLACK_DATE, INTERVAL 30 DAY) as endDay from blackuser
+	        ) as temp
+	        where NOW() > endDay
+	    )
+	</delete>
+		
+	
+	
+</mapper>

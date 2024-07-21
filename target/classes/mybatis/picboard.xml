@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.picboard.mapper.PicboardDao">
+	<!-- 게시판 추가 -->
+	<insert id="boardUp">
+	    INSERT INTO picboard (board_id, board_date, del_yn, user_id)
+	    VALUES ((SELECT IFNULL(MAX(board_id), 0) + 1 FROM picboard), NOW(), 'n', #{user_id})
+	</insert>
+	<!-- 최대 게시판 ID 조회 -->	
+	<select id="boarditem" resultType="integer">
+	    SELECT MAX(board_id) FROM picboard
+	</select>
+	<!-- 특정 사용자의 최신 게시판 항목 조회 -->	
+	<select id="item" resultType="kr.ddit.kixiv.picboard.vo.Picboard">
+	    SELECT T.*
+	    FROM (
+	        SELECT board_id, pic_view, regist_date, board_ment, user_id, content, likey
+	        FROM picboard
+	        WHERE user_id = #{user_id}
+	        ORDER BY board_id DESC
+	    ) T
+	    LIMIT 1
+	</select>
+	<!-- 게시판 리스트 조회 (내림차순) -->	
+	<select id="list" resultType="kr.ddit.kixiv.picboard.vo.Picboard">
+	    SELECT * FROM picboard
+	    ORDER BY board_id DESC
+	</select>
+	<!-- 좋아요 수 기준 게시판 리스트 조회 -->	
+	<select id="likelist" resultType="kr.ddit.kixiv.picboard.vo.Picboard">
+	    SELECT * FROM picboard
+	    ORDER BY likey DESC
+	</select>
+	<!-- 게시판의 작성자 ID 확인 -->	
+	<select id="checkUser" resultType="String">
+	    SELECT user_id FROM picboard WHERE board_id = #{board_id}
+	</select>
+	<!-- 게시판 삭제 -->	
+	<delete id="deleteBoard">
+	    DELETE FROM picboard
+	    WHERE board_id = #{board_id}
+	</delete>
+	<!-- 게시판 논리 삭제 (삭제 플래그 업데이트) -->	
+	<update id="deleteYnBoard">
+	    UPDATE picboard
+	    SET del_yn = 'y'
+	    WHERE board_id = #{board_id}
+	</update>
+	<!-- 게시판 조회수 증가 -->	
+	<update id="upcnt">
+	    UPDATE picboard
+	    SET lookcnt = lookcnt + 1
+	    WHERE board_id = #{board_id}
+	</update>
+	<!-- 게시판 조회수 확인 -->	
+	<select id="countCnt" resultType="int">
+	    SELECT lookcnt FROM picboard WHERE board_id = #{board_id}
+	</select>
+	<!--사용자의 총 조회수 합계-->	
+	<select id="myLookCnt" resultType="int">
+	    SELECT IFNULL(SUM(lookcnt), 0)
+	    FROM picboard
+	    WHERE user_id = #{user_id}
+	</select>
+	<!-- 특정 게시판 항목 조회 -->	
+	<select id="picitem" resultType="kr.ddit.kixiv.picboard.vo.Picboard">
+	    SELECT * FROM picboard WHERE board_id = #{board_id}
+	</select>
+</mapper>

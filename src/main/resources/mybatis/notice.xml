@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.notice.mapper.NoticeDao">
+	<!-- 공지사항 리스트 조회 -->	
+	<select id="noticeList" resultType="kr.ddit.kixiv.notice.vo.NoticeVO">
+	    SELECT notice_id, notice_title, notice_content, hit, notice_sdate, admin_id
+	    FROM (
+	        SELECT 
+	            notice_id, notice_title, notice_content, hit, notice_sdate, admin_id,
+	            ROW_NUMBER() OVER (ORDER BY notice_id DESC) AS rNum
+	        FROM notice
+	        <if test='searchType.equals("title")'>
+	            WHERE notice_title LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	        <if test='searchType.equals("content")'>
+	            WHERE notice_content LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	        <if test='searchType.equals("title_content")'>
+	            WHERE notice_title LIKE CONCAT('%', #{keyword}, '%')
+	               OR notice_content LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	    ) t
+	    WHERE rNum BETWEEN #{startPost} AND #{endPost}
+	</select>
+	<!-- 총 개수 조회 -->	
+	<select id="totalCount" resultType="int">
+	    SELECT COUNT(*)
+	    FROM notice
+	    <if test='searchType.equals("title")'>
+	        WHERE notice_title LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	    <if test='searchType.equals("content")'>
+	        WHERE notice_content LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	    <if test='searchType.equals("title_content")'>
+	        WHERE notice_title LIKE CONCAT('%', #{keyword}, '%')
+	           OR notice_content LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	</select>
+	<!-- 조회수 증가 -->	
+	<update id="addHit">
+	    UPDATE notice
+	    SET hit = hit + 1
+	    WHERE notice_id = #{notice_id}
+	</update>
+	<!-- 특정 공지사항 조회 -->
+	<select id="getNotice" resultType="kr.ddit.kixiv.notice.vo.NoticeVO">
+	    SELECT *
+	    FROM notice
+	    WHERE notice_id = #{notice_id}
+	</select>
+	<!-- 공지사항 추가 -->	
+	<insert id="write">
+	    INSERT INTO notice (NOTICE_ID, NOTICE_TITLE, NOTICE_CONTENT, HIT, NOTICE_SDATE, ADMIN_ID)
+	    VALUES (
+	        (SELECT IFNULL(MAX(notice_id), 0) + 1 FROM notice), 
+	        #{notice_title}, 
+	        #{notice_content}, 
+	        0, 
+	        NOW(), 
+	        'admin'
+	    )
+	</insert>
+	<!-- 공지사항 수정 -->
+	<update id="modify">
+	    UPDATE notice
+	    SET notice_title = #{notice_title}, 
+	        notice_content = #{notice_content}
+	    WHERE notice_id = #{notice_id}
+	</update>
+	<!-- 공지사항 삭제 -->
+	<delete id="delete">
+	    DELETE FROM notice
+	    WHERE notice_id = #{notice_id}
+	</delete>
+
+	
+</mapper>

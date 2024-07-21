@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.report.mapper.ReportDao">
+	
+	<select id="reportList" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+	    SELECT report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id
+	    FROM (
+	        SELECT 
+	            report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id,
+	            ROW_NUMBER() OVER (ORDER BY report_id DESC) AS rNum
+	        FROM report
+	        <choose>
+	            <when test="user_id.equals('')">
+	                WHERE 1=1
+	            </when>
+	            <otherwise>
+	                WHERE user_id = #{user_id}
+	            </otherwise>
+	        </choose>
+	        <if test='searchType.equals("reason")'>
+	            AND report_reason LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	        <if test='searchType.equals("content")'>
+	            AND report_content LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	        <if test='searchType.equals("report_yn")'>
+	            AND report_yn LIKE CONCAT('%', #{keyword}, '%')
+	        </if>
+	    ) t
+	    WHERE rNum BETWEEN #{startPost} AND #{endPost}
+	</select>
+	
+	<select id="totalCount" resultType="int">
+	    SELECT COUNT(*)
+	    FROM report
+	    <choose>
+	        <when test="user_id.equals('')">
+	            WHERE 1=1
+	        </when>
+	        <otherwise>
+	            WHERE user_id = #{user_id}
+	        </otherwise>
+	    </choose>
+	    <if test='searchType.equals("reason")'>
+	        AND report_reason LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	    <if test='searchType.equals("content")'>
+	        AND report_content LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	    <if test='searchType.equals("report_yn")'>
+	        AND report_yn LIKE CONCAT('%', #{keyword}, '%')
+	    </if>
+	</select>
+	
+	<insert id="Reportadd">
+	    INSERT INTO report(report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id)
+	    VALUES(
+	        (SELECT IFNULL(MAX(report_id), 0) + 1 FROM report), #{report_content}, NOW(), 'y', #{report_reason}, #{report_add}, #{report_title}, #{report_what}, #{user_id}, #{bad_user_id}
+	    )
+	</insert>
+	
+	<select id="detailItem" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+	    SELECT * FROM report
+	    WHERE report_id = #{report_id}
+	</select>
+	
+	<update id="updateReport">
+	    UPDATE report
+	    SET report_yn = #{report_yn}
+	    WHERE report_id = #{report_id}
+	</update>
+<!-- 	
+	<select id="getNotice" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+		select *s
+		from notice
+		where notice_id = #{notice_id}
+	</select>
+	
+	<insert id="write">
+		insert into notice(NOTICE_ID, NOTICE_TITLE, NOTICE_CONTENT, HIT, NOTICE_SDATE, ADMIN_ID)
+		values(
+			(select max(notice_id) from notice)+1, 
+			#{notice_title}, #{notice_content}, 0, sysdate, 'admin'
+		)
+	</insert>
+
+	<update id="modify">
+		update notice
+		set notice_title = #{notice_title}, notice_content = #{notice_content}
+		where notice_id = #{notice_id}
+	</update>
+
+	<delete id="delete">
+		delete from notice
+		where notice_id = #{notice_id}
+	</delete> -->
+
+	
+</mapper>

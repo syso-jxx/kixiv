@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.picture.mapper.PictureDao">
+
+	<insert id="fileupdate">
+	    INSERT INTO picture
+	    (pic_num, pic_path, pic_name, thum_name, down_cnt, board_id, user_id)
+	    VALUES ((SELECT IFNULL(MAX(pic_num), 0) + 1 FROM picture), #{pic_path}, #{pic_name}, #{thum_name}, 0, #{board_id}, #{user_id})
+	</insert>
+	
+	<select id="list" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * FROM picture
+	</select>
+	
+	<select id="picSearch" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * FROM picture WHERE board_id = #{boardid}
+	</select>
+	
+	<select id="picList" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * FROM picture
+	</select>
+	
+	<select id="userPic" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT pic_num, pic_path, pic_name, thum_name, down_cnt, board_id, user_id, cnt, likey_cnt
+	    FROM (
+	        SELECT A.pic_num, A.pic_path, A.pic_name, A.thum_name, A.down_cnt, A.board_id, A.user_id,
+	            ROW_NUMBER() OVER (ORDER BY A.pic_num DESC) AS rNum,
+	            (SELECT COUNT(*) FROM likey B WHERE B.pic_num = A.pic_num) AS likey_cnt,
+	            (SELECT COUNT(*) FROM likey WHERE pic_num = A.pic_num AND user_id = #{user_id}) AS cnt
+	        FROM picture A
+	        WHERE A.board_id = #{board_id}
+	    ) AS mb
+	    WHERE rNum BETWEEN #{startPost} AND #{endPost}
+	    ORDER BY pic_num DESC
+	</select>
+	
+	<select id="listCount" resultType="int">
+	    SELECT COUNT(*)
+	    FROM picture
+	    WHERE board_id = #{board_id} AND pic_num > 0
+	</select>
+	
+	<select id="OneSearch" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * FROM picture WHERE pic_num = #{pic_num}
+	</select>
+		
+		<!-- <select id="list" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	        SELECT A.PICID,A.USERID,A.PIC_SCORE,A.BORAD_ID,A.GANRE_NUM,A.FILENAME,A.PATHFILE,A.THUMBNAIL 
+	        FROM PICTURE A
+	        WHERE A.PICID = (
+	            SELECT MIN(B.PICID)
+	            FROM   PICTURE B
+	            WHERE  A.BORAD_ID = B.BORAD_ID 
+	        )
+	        AND A.GANRE_NUM = 1
+		</select> -->
+		
+	<select id="newsImg" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	            ORDER BY P.BOARD_ID DESC
+	        ) AS subquery
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="veryLikeImg" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG,
+	                   (SELECT COUNT(*) FROM likey L WHERE P.PIC_NUM = L.PIC_NUM) AS likey_cnt
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	            ORDER BY likey_cnt DESC
+	        ) AS subquery
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="followImg" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	              AND P.USER_ID IN (SELECT F.FROM_ID FROM following F WHERE F.TO_ID = #{user_id})
+	            ORDER BY P.PIC_NUM DESC
+	        ) AS subquery
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="myImgs" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT P.PIC_NUM,
+	               P.PIC_PATH,
+	               P.PIC_NAME,
+	               P.THUM_NAME,
+	               P.DOWN_CNT,
+	               P.BOARD_ID,
+	               P.USER_ID,
+	               U.PROFILE_IMG
+	        FROM picture P
+	        JOIN users U ON P.USER_ID = U.USER_ID
+	        JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	        WHERE P.USER_ID = #{user_id}
+	          AND B.DEL_YN = 'n'
+	        ORDER BY P.PIC_NUM DESC
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+		
+		<select id="hashTag" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * 
+	    FROM picture P
+	    WHERE BOARD_ID IN (
+	        SELECT board_id 
+	        FROM taglist 
+	        WHERE TAG_ID = #{tag_id}
+	    )
+	</select>
+	
+	<!-- 편집 -->
+	<select id="totalCount" resultType="int">
+	    SELECT COUNT(*)
+	    FROM picture
+	    WHERE board_id = #{board_id}
+	</select>
+	
+	<!-- 페이징 처리 -->
+	<select id="getListCnt" resultType="int">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	        ) AS subquery
+	    )
+	    SELECT COUNT(*) 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="getList" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, THUM_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG,
+	               ROW_NUMBER() OVER (ORDER BY P.PIC_NUM DESC) AS rNum
+	        FROM picture P
+	        JOIN users U ON P.USER_ID = U.USER_ID
+	        JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	        WHERE B.DEL_YN = 'n'
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.rNum BETWEEN #{startNum} AND #{endNum}
+	    ORDER BY U.PIC_NUM DESC
+	</select>
+	
+	<select id="veryLikeImgs" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, THUM_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG, likey_cnt,
+	               ROW_NUMBER() OVER (ORDER BY likey_cnt DESC) AS rNum
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG,
+	                   (SELECT COUNT(*) FROM likey L WHERE P.PIC_NUM = L.PIC_NUM) AS likey_cnt
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	        ) AS subquery
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.rNum BETWEEN #{startNum} AND #{endNum}
+	    ORDER BY U.likey_cnt DESC
+	</select>
+	
+	<select id="getFollowListCnt" resultType="int">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM,
+	                   P.PIC_PATH,
+	                   P.PIC_NAME,
+	                   P.THUM_NAME,
+	                   P.DOWN_CNT,
+	                   P.BOARD_ID,
+	                   P.USER_ID,
+	                   U.PROFILE_IMG
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE B.DEL_YN = 'n'
+	              AND P.USER_ID IN (
+	                  SELECT F.FROM_ID 
+	                  FROM following F 
+	                  WHERE F.TO_ID = #{user_id}
+	              )
+	        ) AS subquery
+	    )
+	    SELECT COUNT(*) 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="followImgs" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, THUM_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT P.PIC_NUM, P.PIC_PATH, P.PIC_NAME, P.THUM_NAME, P.DOWN_CNT, P.BOARD_ID, P.USER_ID, U.PROFILE_IMG,
+	                   ROW_NUMBER() OVER (ORDER BY P.PIC_NUM DESC) AS rNum
+	            FROM picture P
+	            JOIN users U ON P.USER_ID = U.USER_ID
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE P.USER_ID IN (
+	                SELECT F.FROM_ID 
+	                FROM following F 
+	                WHERE F.TO_ID = #{user_id}
+	            ) 
+	            AND B.DEL_YN = 'n'
+	        ) AS mb
+	        WHERE rNum BETWEEN #{startNum} AND #{endNum}
+	        ORDER BY PIC_NUM DESC
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="getMyListCnt" resultType="int">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, BOARD_ID, USER_ID
+	        FROM (
+	            SELECT P.PIC_NUM, P.PIC_PATH, P.BOARD_ID, P.USER_ID
+	            FROM picture P
+	            JOIN picboard B ON P.BOARD_ID = B.BOARD_ID
+	            WHERE P.USER_ID = #{user_id}
+	            AND B.DEL_YN = 'n'
+	        ) AS subquery
+	    )
+	    SELECT COUNT(*)
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="getPicture" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT * 
+	    FROM picture
+	    WHERE board_id = #{board_id}
+	</select>
+	
+	<delete id="deleteChangeImg">
+	    DELETE FROM picture 
+	    WHERE pic_num = #{pic_num}
+	</delete>
+	
+	<delete id="deletePicture">
+	    DELETE FROM picture 
+	    WHERE board_id = #{board_id}
+	</delete>
+	
+	<select id="newTopImg" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    SELECT PIC_PATH, BOARD_ID
+	    FROM (
+	        SELECT P.USER_ID AS USER_ID, P.PIC_NUM, P.PIC_PATH, P.BOARD_ID, COUNT(P.USER_ID) AS CNT
+	        FROM picture P
+	        JOIN likey L ON P.PIC_NUM = L.PIC_NUM
+	        GROUP BY P.USER_ID, P.PIC_NUM, P.PIC_PATH, P.BOARD_ID
+	    ) AS C
+	    JOIN (
+	        SELECT USER_ID, JOIN_DATE
+	        FROM users
+	        WHERE JOIN_DATE BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH) AND CURDATE()
+	    ) AS US ON US.USER_ID = C.USER_ID
+	    ORDER BY CNT DESC
+	    LIMIT 5
+	</select>
+		
+	<select id="recomImg" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT p1.pic_num, p1.PIC_PATH, p1.user_id, t.profile_img, t.board_id
+	            FROM (
+	                SELECT l.like_seq, p.pic_num, b.board_id, l.user_id, p.PIC_PATH, u.profile_img
+	                FROM likey l
+	                JOIN picture p ON l.pic_num = p.PIC_NUM
+	                JOIN picboard b ON p.BOARD_ID = b.BOARD_ID
+	                JOIN users u ON p.USER_ID = u.USER_ID
+	                WHERE l.user_id = #{user_id}
+	            ) AS t
+	            JOIN picture p1 ON t.board_id = p1.board_id
+	            GROUP BY p1.pic_num, p1.user_id, p1.PIC_PATH, t.profile_img, t.board_id
+	        ) AS subquery
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="getRecomListCnt" resultType="integer">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, BOARD_ID, USER_ID, PROFILE_IMG
+	        FROM (
+	            SELECT p1.pic_num, p1.PIC_PATH, p1.user_id, t.profile_img, t.board_id
+	            FROM (
+	                SELECT l.like_seq, p.pic_num, b.board_id, l.user_id, p.PIC_PATH, u.profile_img
+	                FROM likey l
+	                JOIN picture p ON l.pic_num = p.PIC_NUM
+	                JOIN picboard b ON p.BOARD_ID = b.BOARD_ID
+	                JOIN users u ON p.USER_ID = u.USER_ID
+	                WHERE l.user_id = #{user_id}
+	            ) AS t
+	            JOIN picture p1 ON t.board_id = p1.board_id
+	            GROUP BY p1.pic_num, p1.user_id, p1.PIC_PATH, t.profile_img, t.board_id
+	        ) AS subquery
+	    )
+	    SELECT COUNT(*)
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+	
+	<select id="RecomImgs" resultType="kr.ddit.kixiv.picture.vo.Picture">
+	    WITH T AS (
+	        SELECT PIC_NUM, PIC_PATH, BOARD_ID, PROFILE_IMG
+	        FROM (
+	            SELECT p1.pic_num, p1.PIC_PATH, t.BOARD_ID, p1.user_id, t.profile_img, ROW_NUMBER() OVER (ORDER BY p.pic_num DESC) AS rNum
+	            FROM likey l
+	            JOIN picture p ON l.pic_num = p.PIC_NUM
+	            JOIN picboard b ON p.BOARD_ID = b.BOARD_ID
+	            JOIN users u ON p.USER_ID = u.USER_ID
+	            JOIN picture p1 ON t.board_id = p1.board_id
+	            WHERE l.user_id = #{user_id}
+	        ) AS t
+	        WHERE rNum BETWEEN #{startNum} AND #{endNum}
+	        GROUP BY p1.pic_num, p1.user_id, t.BOARD_ID, p1.PIC_PATH, t.profile_img
+	    )
+	    SELECT * 
+	    FROM T AS U
+	    WHERE U.PIC_NUM = (
+	        SELECT MAX(V.PIC_NUM)
+	        FROM T AS V
+	        WHERE V.BOARD_ID = U.BOARD_ID
+	    )
+	</select>
+</mapper>
