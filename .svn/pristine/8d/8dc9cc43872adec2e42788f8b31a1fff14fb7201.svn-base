@@ -1,0 +1,25 @@
+package kr.ddit.kixiv.picboard.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.ddit.kixiv.picboard.vo.Picboard;
+
+@Mapper
+public interface PicboardDao {
+
+	void boardUp(Picboard board);
+
+	int boarditem();
+	
+	Picboard item(String userid);
+
+	List<Picboard> list();
+
+	List<Picboard> likelist();
+
+	String checkUser(int board_id);
+
+
+}

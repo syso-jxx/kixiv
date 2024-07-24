@@ -41,17 +41,17 @@
 	
 	<!-- 펀딩 차트 -->
 	<select id="chartFundCountData" resultType="String">
-	    select Distinct MONTH(FUND_DATE) AS MONTH from FUND Order By MONTH asc
+	    select Distinct MONTH(FUND_DATE) AS MONTH from fund Order By MONTH asc
 	</select>
 	
 	<select id="chartFundCountCnt" resultType="String">
 	    select IFNULL(B.CNT,0) CNT
 	    from
 	    (
-	        select Distinct MONTH(FUND_DATE) AS MONTH from FUND Order By MONTH asc
+	        select Distinct MONTH(FUND_DATE) AS MONTH from fund Order By MONTH asc
 	    ) A LEFT OUTER JOIN
 	    (
-	        select MONTH(FUND_DATE) AS MONTH, COUNT(FUND_DATE) CNT from FUND 
+	        select MONTH(FUND_DATE) AS MONTH, COUNT(FUND_DATE) CNT from fund 
 	        group by MONTH(FUND_DATE)
 	    ) B ON (A.MONTH = B.MONTH)
 	    Order By A.MONTH asc
@@ -61,10 +61,10 @@
 	    SELECT TAG_NAME
 	    FROM (
 	        select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
-	        from TAG T
+	        from tag T
 	    ) A LEFT OUTER JOIN (
 	        select TAG_ID, COUNT(TAG_ID) CNT 
-	        from TAGLIST 
+	        from taglist 
 	        group by TAG_ID 
 	    ) B ON (A.TAG_ID = B.TAG_ID)
 	    Order By A.TAG_NAME asc
@@ -74,10 +74,10 @@
 	    SELECT IFNULL(B.CNT,0) CNT
 	    FROM (
 	        select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
-	        from TAG T
+	        from tag T
 	    ) A LEFT OUTER JOIN (
 	        select TAG_ID, COUNT(TAG_ID) CNT 
-	        from TAGLIST 
+	        from taglist 
 	        group by TAG_ID 
 	    ) B ON (A.TAG_ID = B.TAG_ID)
 	    Order By A.TAG_NAME asc
@@ -87,10 +87,10 @@
 	    SELECT TAG_NAME
 	    FROM (
 	        select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
-	        from TAG T
+	        from tag T
 	    ) A LEFT OUTER JOIN (
 	        select TAG_ID, COUNT(TAG_ID) CNT 
-	        from TAGLIST 
+	        from taglist 
 	        group by TAG_ID 
 	    ) B ON (A.TAG_ID = B.TAG_ID)
 	    WHERE B.CNT IS NOT NULL
@@ -102,10 +102,10 @@
 	    SELECT IFNULL(B.CNT,0) CNT
 	    FROM (
 	        select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
-	        from TAG T
+	        from tag T
 	    ) A LEFT OUTER JOIN (
 	        select TAG_ID, COUNT(TAG_ID) CNT 
-	        from TAGLIST 
+	        from taglist 
 	        group by TAG_ID 
 	    ) B ON (A.TAG_ID = B.TAG_ID)
 	    WHERE B.CNT IS NOT NULL
@@ -118,7 +118,7 @@
 	    FROM USERS Z 
 	    JOIN (
 	        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
-	        FROM PICTURE P
+	        FROM picture P
 	        JOIN LIKEY L ON P.PIC_NUM = L.PIC_NUM    
 	        GROUP BY P.USER_ID
 	    ) C ON Z.USER_ID = C.USER_ID
@@ -128,10 +128,10 @@
 	
 	<select id="userRankCntList" resultType="String">
 	    SELECT C.CNT 
-	    FROM USERS Z 
+	    FROM users Z 
 	    JOIN (
 	        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
-	        FROM PICTURE P
+	        FROM picture P
 	        JOIN LIKEY L ON P.PIC_NUM = L.PIC_NUM    
 	        GROUP BY P.USER_ID
 	    ) C ON Z.USER_ID = C.USER_ID
@@ -143,12 +143,12 @@
 	    SELECT C.USER_ID
 	    FROM (
 	        SELECT U.USER_ID, U.JOIN_DATE 
-	        FROM USERS U
+	        FROM users U
 	        WHERE U.JOIN_DATE BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH) AND CURDATE()
 	    ) Z
 	    JOIN (
 	        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
-	        FROM PICTURE P
+	        FROM picture P
 	        JOIN LIKEY L ON P.PIC_NUM = L.PIC_NUM    
 	        GROUP BY P.USER_ID
 	    ) C ON Z.USER_ID = C.USER_ID
@@ -160,12 +160,12 @@
 	    SELECT C.CNT 
 	    FROM (
 	        SELECT U.USER_ID, U.JOIN_DATE 
-	        FROM USERS U
+	        FROM users U
 	        WHERE U.JOIN_DATE BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH) AND CURDATE()
 	    ) US
 	    JOIN (
 	        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
-	        FROM PICTURE P
+	        FROM picture P
 	        JOIN LIKEY L ON P.PIC_NUM = L.PIC_NUM    
 	        GROUP BY P.USER_ID
 	    ) C ON US.USER_ID = C.USER_ID

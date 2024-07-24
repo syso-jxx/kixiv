@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.fund.mapper.FundDao">
+   <select id="selectAll" resultType="HashMap">
+      select 
+          a.fund_id, fund_title, fund_content, fund_achieve,
+          fund_date, fund_sdate, fund_edate, one_price, fund_zip,
+          fund_add1, fund_add2, place_tel, a.user_id, a.fund_code,
+          (select count(*) from investor where fund_id = a.fund_id)*one_price total,
+          ((select count(*) from investor where fund_id = a.fund_id)*one_price/fund_achieve)*100 rate,
+          (select b.fund_picpath from fund_picture b where b.fund_id = a.fund_id and rownum = 1) thumbnail
+      from 
+          fund a
+       where 
+          <![CDATA[ to_char(a.fund_sdate, 'YYYYMMDD') <= to_char(sysdate, 'YYYYMMDD') ]]>
+       and 
+          <![CDATA[ to_char(a.fund_edate, 'YYYYMMDD') >= to_char(sysdate, 'YYYYMMDD') ]]>
+   </select>
+   
+   <select id="selectList" resultType="HashMap">
+      select 
+          a.fund_id, fund_title, fund_content, fund_achieve,
+          fund_date, fund_sdate, fund_edate, one_price, fund_zip,
+          fund_add1, fund_add2, place_tel, a.user_id, a.fund_code,
+          (select count(*) from investor where fund_id = a.fund_id)*one_price total,
+          ((select count(*) from investor where fund_id = a.fund_id)*one_price/fund_achieve)*100 rate,
+          (select b.fund_picpath from fund_picture b where b.fund_id = a.fund_id and rownum = 1) thumbnail
+      from 
+          fund a
+      where
+         a.fund_code = #{fundCode}
+      and
+         <![CDATA[ to_char(a.fund_sdate, 'YYYYMMDD') <= to_char(sysdate, 'YYYYMMDD') ]]>
+      and 
+         <![CDATA[ to_char(a.fund_edate, 'YYYYMMDD') >= to_char(sysdate, 'YYYYMMDD') ]]>
+   </select>
+   
+   <select id="selectList_coming" resultType="HashMap">
+      select 
+          a.fund_id, fund_title, fund_content, fund_achieve,
+          fund_date, fund_sdate, fund_edate, one_price, fund_zip,
+          fund_add1, fund_add2, place_tel, a.user_id, a.fund_code,
+          (select count(*) from investor where fund_id = a.fund_id)*one_price total,
+          ((select count(*) from investor where fund_id = a.fund_id)*one_price/fund_achieve)*100 rate,
+          (select b.fund_picpath from fund_picture b where b.fund_id = a.fund_id and rownum = 1) thumbnail
+      from 
+          fund a
+       where
+         <![CDATA[ fund_sdate > sysdate ]]>
+   </select>
+   
+   <select id="selectList_end" resultType="HashMap">
+		select 
+			a.fund_id, fund_title, fund_content, fund_achieve,
+			fund_date, fund_sdate, fund_edate, one_price, fund_zip,
+			fund_add1, fund_add2, place_tel, a.user_id, a.fund_code,
+			(select count(*) from investor where fund_id = a.fund_id)*one_price total,
+			((select count(*) from investor where fund_id = a.fund_id)*one_price/fund_achieve)*100 rate,
+			(select b.fund_picpath from fund_picture b where b.fund_id = a.fund_id and rownum = 1) thumbnail
+		from 
+    		fund a
+		where 
+   			<![CDATA[ to_char(a.fund_edate, 'YYYYMMDD') < to_char(sysdate, 'YYYYMMDD') ]]>
+   </select>
+   
+   <select id="selectCodeList" resultType="kr.ddit.kixiv.fund.vo.FundCodeVO">
+      select 
+         fund_code, code_name 
+      from 
+         fund_code
+   </select>
+   
+   <select id="selectFundVO" resultType="kr.ddit.kixiv.fund.vo.FundVO">
+      select 
+          fund_id, fund_title, fund_content, fund_achieve, 
+          fund_date, fund_sdate, fund_edate, one_price, 
+          fund_zip, fund_add1, fund_add2, place_tel, user_id, fund_code,
+          (select count(*) from investor where fund_id = a.fund_id)*one_price total,
+          ((select count(*) from investor where fund_id = a.fund_id)*one_price/fund_achieve)*100 rate
+      from 
+         fund a
+      where 
+         fund_id = #{fundId}
+   </select>
+   
+   <select id="selectFundPicList" resultType="HashMap">
+      select 
+	     a.picseq, 
+	     a.fund_id, 
+	     a.fund_picpath
+	  from 
+	     fund_picture a, fund b
+	  where 
+	     a.fund_id = b.fund_id
+	  and 
+	     a.fund_id = #{fundId}
+   </select>
+   
+   <select id="selectMaxFundId" resultType="int">
+      select 
+      	NVL(MAX(fund_id),0) as fundId 
+      from 
+      	fund
+   </select>
+   
+   <insert id="insertFund">
+   
+	insert into fund
+		(	
+			fund_id, 
+			fund_title, 
+			fund_content, 
+			fund_achieve, 
+			fund_date, 
+			fund_sdate, 
+			fund_edate, 
+			one_price, 
+			fund_zip, 
+			fund_add1, 
+			fund_add2, 
+			place_tel, 
+			user_id, 
+			fund_code
+		)
+	values
+		(
+			#{fundId}, 
+			#{fund_title}, 
+			#{fund_content},
+			#{achieve}, 
+			sysdate, 
+			#{sdate}, 
+			#{edate}, 
+			#{one_price}, 
+			#{fund_zip}, 
+			#{fund_add1}, 
+			#{fund_add2}, 
+			#{place_tel}, 
+			#{userId}, 
+			#{fundCode}
+		)
+   </insert>
+   
+   <insert id="insertFundPicture">
+	insert into fund_picture
+	(
+	    picseq, 
+	    fund_picpath, 
+	    fund_picname, 
+	    fund_id
+	)
+	values
+	(
+	    (select NVL(MAX(picseq),0)+1 as picseq from fund_picture),
+	    #{picPath},
+	    #{picName},
+	    #{fundId}
+	)
+   </insert>
+   
+</mapper>

@@ -4,8 +4,8 @@
 
 	<insert id="fileupdate">
 	    INSERT INTO picture
-	    (pic_num, pic_path, pic_name, thum_name, down_cnt, board_id, user_id)
-	    VALUES ((SELECT IFNULL(MAX(pic_num), 0) + 1 FROM picture), #{pic_path}, #{pic_name}, #{thum_name}, 0, #{board_id}, #{user_id})
+	    (pic_path, pic_name, thum_name, down_cnt, board_id, user_id)
+	    VALUES (#{pic_path}, #{pic_name}, #{thum_name}, 0, #{board_id}, #{user_id})
 	</insert>
 	
 	<select id="list" resultType="kr.ddit.kixiv.picture.vo.Picture">
@@ -214,7 +214,7 @@
 	
 	<select id="getList" resultType="kr.ddit.kixiv.picture.vo.Picture">
 	    WITH T AS (
-	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, THUM_NAME, DOWN_CNT, BOARD_ID, USER_ID, PROFILE_IMG,
+	        SELECT PIC_NUM, PIC_PATH, PIC_NAME, THUM_NAME, DOWN_CNT, P.BOARD_ID, P.USER_ID, PROFILE_IMG,
 	               ROW_NUMBER() OVER (ORDER BY P.PIC_NUM DESC) AS rNum
 	        FROM picture P
 	        JOIN users U ON P.USER_ID = U.USER_ID

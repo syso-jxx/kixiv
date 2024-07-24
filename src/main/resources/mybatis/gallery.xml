@@ -126,19 +126,43 @@
 	    FROM good_bad
 	    WHERE cmt_id = #{cmt_id}
 	</select>
-	
+
 	<insert id="addGallery">
-	    INSERT INTO gallery(gallery_num, gallery_name, gallery_zip, gallery_add1, gallery_add2, gallery_tel, 
-	    gallery_intro, gallery_img, gallery_path, gallery_thum, user_id, delete_yn, homepage)
-	    VALUES((SELECT COALESCE(MAX(gallery_num), 0) + 1 FROM gallery), #{gallery_name}, #{gallery_zip}, #{gallery_add1}, #{gallery_add2}, #{gallery_tel}, #{gallery_intro}, #{gallery_img}, 'path', 'thum', #{user_id}, 'n',
-	    <choose>
-	        <when test="homepage == null">
-	            '')
-	        </when>
-	        <otherwise>
-	            #{homepage})
-	        </otherwise>
-	    </choose>
+		INSERT INTO gallery (
+		gallery_name,
+		gallery_zip,
+		gallery_add1,
+		gallery_add2,
+		gallery_tel,
+		gallery_intro,
+		gallery_img,
+		gallery_path,
+		gallery_thum,
+		user_id,
+		delete_yn,
+		homepage
+		)
+		VALUES (
+		#{gallery_name},
+		#{gallery_zip},
+		#{gallery_add1},
+		#{gallery_add2},
+		#{gallery_tel},
+		#{gallery_intro},
+		#{gallery_img},
+		'path',
+		'thum',
+		#{user_id},
+		'n',
+		<choose>
+			<when test="homepage == null">
+				''
+			</when>
+			<otherwise>
+				#{homepage}
+			</otherwise>
+		</choose>
+		)
 	</insert>
 	
 	<update id="modifyGallery">
@@ -425,6 +449,7 @@
 	    UPDATE gallery_rent
 	    SET cancel_status = 'r', cancel_date = NOW()
 	    WHERE rent_num = #{rent_num}
+
 	</update>
 	<!-- 렌트 상태 업데이트 -->
 	<update id="rentStatusUpdate">
@@ -455,4 +480,30 @@
 	    FROM cmt
 	    WHERE grp = #{grp}
 	</select>
+
+	<!-- 대여 가능한 갤러리 글쓰기 -->
+	<insert id="writeRent">
+		INSERT INTO rent (
+		rent_content,
+		rent_sdate,
+		rent_edate,
+		rent_status,
+		rent_price,
+		fund_yn,
+		rentdate,
+		del_yn,
+		gallery_num
+		)
+		VALUES (
+		#{rent_content},
+		#{rent_sdate},
+		#{rent_edate},
+		'n',
+		#{rent_price},
+		#{fund_yn},
+		#{rentdate},
+		'n',
+		#{gallery_num}
+		)
+	</insert>
 </mapper>

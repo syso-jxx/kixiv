@@ -30,7 +30,7 @@ public class LikeyController {
 	    to.setUser_id((String) session.getAttribute("userId"));
 	    
 	    //좋아요 데이터 추가(+)
-	    likeyService.heartUp(to); 
+	    likeyService.heartUp(to);
 	    
 	    // +1된 하트 갯수를 담아오기위함
 	    int cnt = likeyService.pictureSaveHeart(to);

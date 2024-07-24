@@ -11,6 +11,8 @@ public interface LikeyService {
 	//좋아요 데이터 추가
 	void heartUp(LikeyVo to);
 	
+//	void insertHeartWithSeq(LikeyVo to);
+	
 	//좋아요 데이터 삭제
 	void heartDown(LikeyVo to);
 	

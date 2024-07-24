@@ -3,11 +3,23 @@ package kr.ddit.kixiv.picboard.vo;
 import java.util.Date;
 
 public class Picboard {
+	private String picboard;
+	
 	private int board_id;
 	private Date board_date;
 	private String del_yn;
 	private String user_id;
 
+   // Getter for picboard
+    public String getPicboard() {
+        return picboard;
+    }
+
+    // Setter for picboard
+    public void setPicboard(String picboard) {
+        this.picboard = picboard;
+    }
+	
 	public int getBoard_id() {
 		return board_id;
 	}

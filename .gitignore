@@ -1,0 +1,6 @@
+## 폴더 무시
+target/
+
+# 파일 무시
+root-context.xml
+servlet-context.xml

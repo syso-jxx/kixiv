@@ -40,6 +40,11 @@ public class PicBoardServiceImpl implements PicBoardService {
 	public void boradUp(Picboard board) {
 		dao.boardUp(board);
 	}
+	
+	@Override
+	public int boradSelect() {
+		return dao.boardSelect();
+	}
 
 	@Override
 	public String checkUser(int board_id) {

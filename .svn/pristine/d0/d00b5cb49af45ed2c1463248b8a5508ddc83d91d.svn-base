@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.chart.mapper.ChartMapper">
+	<!-- 	select month, count(MONTH) as cnt 
+		from(
+		    select EXTRACT(MONTH FROM Join_Date) AS MONTH, User_Id from users Order By MONTH    
+		) 
+		group by month
+		Order By month asc -->
+	<select id="chartCountDate" resultType="String">
+		select Distinct EXTRACT(MONTH FROM Join_Date) AS MONTH from users Order By MONTH asc
+	</select>
+
+	<select id="chartCountPeple" resultType="String">
+		select NVL(B.CNT,0) CNT
+		from
+		(
+		    select Distinct EXTRACT(MONTH FROM Join_Date) AS MONTH from users Order By MONTH asc
+		) A LEFT OUTER JOIN
+		(
+		    select EXTRACT(MONTH FROM Join_Date) AS MONTH, COUNT(User_Id) CNT from users 
+		    where USER_LEVEL = 'u'
+		    group by EXTRACT(MONTH FROM Join_Date)  
+		) B ON(A.MONTH = B.MONTH)
+		Order By A.month asc
+	</select>
+	
+	<select id="chartCountGPeple" resultType="String">
+			select NVL(B.CNT,0) CNT
+		from
+		(
+		    select Distinct EXTRACT(MONTH FROM Join_Date) AS MONTH from users Order By MONTH asc
+		) A LEFT OUTER JOIN
+		(
+		    select EXTRACT(MONTH FROM Join_Date) AS MONTH, COUNT(User_Id) CNT from users 
+		    where USER_LEVEL = 'g'
+		    group by EXTRACT(MONTH FROM Join_Date)  
+		) B ON(A.MONTH = B.MONTH)
+		Order By A.month asc
+	</select>
+	
+	<!-- 펀딩 차트 -->
+	<select id="chartFundCountData" resultType="String">
+		select Distinct EXTRACT(MONTH FROM FUND_DATE) AS MONTH from FUND Order By MONTH asc
+	</select>
+	
+	<select id="chartFundCountCnt" resultType="String">
+		select NVL(B.CNT,0) CNT
+		from
+		(
+		    select Distinct EXTRACT(MONTH FROM FUND_DATE) AS MONTH from FUND Order By MONTH asc
+		) A LEFT OUTER JOIN
+		(
+		    select EXTRACT(MONTH FROM FUND_DATE) AS MONTH, COUNT(FUND_DATE) CNT from FUND 
+	
+		    group by EXTRACT(MONTH FROM FUND_DATE)  
+		) B ON(A.MONTH = B.MONTH)
+		Order By A.month asc
+	</select>
+	
+	<select id= "chartTag" resultType="String">
+		SELECT TAG_NAME
+		FROM (
+		    select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
+		    from  TAG T
+		  
+		) A LEFT OUTER JOIN (
+		     select TAG_ID, COUNT(TAG_ID) CNT 
+		     from TAGLIST 
+		    group by TAG_ID 
+		)B ON(A.TAG_ID = B.TAG_ID)
+		Order By A.TAG_NAME asc
+	</select>
+	
+	
+	<select id= "tCntlist" resultType="String">
+    	SELECT NVL(B.CNT,0) CNT
+		FROM (
+		    select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
+		    from  TAG T
+		  
+		) A LEFT OUTER JOIN (
+		     select TAG_ID, COUNT(TAG_ID) CNT 
+		     from TAGLIST 
+		    group by TAG_ID 
+		)B ON(A.TAG_ID = B.TAG_ID)
+		Order By A.TAG_NAME asc
+	</select>
+	
+	<select id= "taglistRankList" resultType="String">
+   		SELECT  TAG_NAME
+			FROM (
+			    select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
+			    from  TAG T
+			) A LEFT OUTER JOIN (
+			     select TAG_ID, COUNT(TAG_ID) CNT 
+			     from TAGLIST 
+			    group by TAG_ID 
+			)B ON(A.TAG_ID = B.TAG_ID)
+		<![CDATA[
+       		where rownum <= 5
+        ]]>
+		Order By A.TAG_NAME asc
+	</select>
+	
+	<select id= "tCntRankList" resultType="String">
+	    SELECT  NVL(B.CNT,0) CNT
+			FROM (
+			    select Distinct(T.TAG_ID) AS TAG_ID, TAG_NAME 
+			    from  TAG T
+			) A LEFT OUTER JOIN (
+			     select TAG_ID, COUNT(TAG_ID) CNT 
+			     from TAGLIST 
+			    group by TAG_ID 
+			)B ON(A.TAG_ID = B.TAG_ID)
+		<![CDATA[
+	    where rownum <= 5
+	    ]]>
+		Order By A.TAG_NAME asc
+	</select>
+	
+	<select id= "userRankList" resultType="String">
+       SELECT C.USER_ID,  C.CNT 
+		    FROM USERS Z 
+		    ,(
+		        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
+		        FROM PICTURE P, LIKEY L 
+		        WHERE P.PIC_NUM = L.PIC_NUM    
+		        GROUP BY P.USER_ID
+		    )C
+		<![CDATA[   
+	    WHERE Z.USER_ID(+) = C.USER_ID AND rownum < 5  
+        ]]> 
+	    ORDER BY CNT DESC
+        
+	</select>
+	
+	<select id= "userRankCntList" resultType="String">
+       SELECT  C.CNT 
+		    FROM USERS Z 
+		    ,(
+		        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
+		        FROM PICTURE P, LIKEY L 
+		        WHERE P.PIC_NUM = L.PIC_NUM    
+		        GROUP BY P.USER_ID
+		    )C
+		 <![CDATA[ 
+	    WHERE Z.USER_ID(+) = C.USER_ID AND rownum < 5  
+          ]]>
+	    ORDER BY CNT DESC
+        
+	</select>
+	
+	<select id="newUserRankList" resultType="String">
+	    SELECT C.USER_ID
+			    FROM
+			    (
+			        SELECT U.USER_ID, U.JOIN_DATE 
+			        FROM USERS U
+			        WHERE  U.JOIN_DATE BETWEEN TO_DATE(add_months(sysdate, -6)) AND TO_DATE(SYSDATE, 'YYYY-MM-DD')   
+			    )Z, 
+			    (
+			        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
+			        FROM PICTURE P, LIKEY L 
+			        WHERE P.PIC_NUM = L.PIC_NUM    
+			        GROUP BY P.USER_ID
+			    )C
+			  <![CDATA[  
+		    WHERE Z.USER_ID(+) = C.USER_ID AND ROWNUM < 5  
+	         ]]>    
+		    ORDER BY CNT DESC
+	</select>
+	
+	<select id= "newUserRank" resultType="String">
+	    SELECT  C.CNT 
+		    FROM
+		    (
+		        SELECT U.USER_ID, U.JOIN_DATE 
+		        FROM USERS U
+		        WHERE  U.JOIN_DATE BETWEEN TO_DATE(add_months(sysdate, -6)) AND TO_DATE(SYSDATE, 'YYYY-MM-DD')   
+		    )US, 
+		    (
+		        SELECT P.USER_ID AS USER_ID, COUNT(P.USER_ID) CNT
+		        FROM PICTURE P, LIKEY L 
+		        WHERE P.PIC_NUM = L.PIC_NUM    
+		        GROUP BY P.USER_ID
+		    )C
+		      <![CDATA[
+		    WHERE US.USER_ID(+) = C.USER_ID AND rownum < 5
+		     ]]>          
+	    ORDER BY CNT DESC
+	</select>
+	
+
+</mapper>

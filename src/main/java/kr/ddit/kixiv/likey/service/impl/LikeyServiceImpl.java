@@ -21,10 +21,21 @@ public class LikeyServiceImpl implements LikeyService {
 		return dao.pictureSaveHeart(to);
 	}
 
-	@Override
+	
+	@Override 
 	public void heartUp(LikeyVo to) {
-		dao.heartUp(to);
+		dao.heartUp(to); 
 	}
+	
+	/*
+	 * @Override public void insertHeartWithSeq(LikeyVo to) { if(to.getCmt_id() ==
+	 * 0) { to.setCmt_id(-1); } if(to.getFund_id() == 0) { to.setFund_id(-1); }
+	 * if(to.getPic_num() == 0) { to.setPic_num(-1); } if(to.getTocmt_id() == 0) {
+	 * to.setTocmt_id(-1); }
+	 * 
+	 * int nextHeartSeq = dao.getNextHeartSeq(); to.setLike_seq(nextHeartSeq);
+	 * dao.heartUp(to); }
+	 */
 
 	@Override
 	public void heartDown(LikeyVo to) {

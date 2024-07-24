@@ -2,15 +2,15 @@ package kr.ddit.kixiv.picboard.mapper;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ibatis.annotations.Mapper;
-
 import kr.ddit.kixiv.picboard.vo.Picboard;
 
 @Mapper
 public interface PicboardDao {
 
 	void boardUp(Picboard board);
+	
+	int boardSelect();
 
 	int boarditem();
 	

@@ -3,6 +3,7 @@ package kr.ddit.kixiv.likey.mapper;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import kr.ddit.kixiv.likey.vo.LikeyVo;
 import kr.ddit.kixiv.picture.vo.Picture;
@@ -26,6 +27,8 @@ public interface LikeyDao {
 	void deleteLikey(String pic_num);
 
 	void deleteLikeyB(int board_id);
+
+	int getNextHeartSeq();
 
 
 }

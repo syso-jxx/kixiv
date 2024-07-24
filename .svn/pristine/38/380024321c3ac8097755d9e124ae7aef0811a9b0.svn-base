@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ddit.kixiv.report.mapper.ReportDao">
+	
+	<select id="reportList" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+		select report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id
+    	from(
+        	select 
+        	    report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id,
+        	   row_number() over(order by report_id desc) as rNum
+        	from report
+        	<choose>
+        		<when test="user_id.equals('')">
+	        		where 1=1
+        		</when>
+        		<otherwise>
+	        		WHERE user_id=#{user_id}
+        		</otherwise>
+        	</choose>
+        	<if test='searchType.equals("reason")'>
+        		AND report_reason like '%' || #{keyword} || '%'
+        	</if>
+        	<if test='searchType.equals("content")'>
+        		AND report_content like '%' || #{keyword} || '%'
+        	</if>
+        	<if test='searchType.equals("report_yn")'>
+        		AND report_yn like '%' || #{keyword} || '%'
+        	</if>
+    	)t
+    	where rNum between #{startPost} and #{endPost}
+        
+	</select>
+	
+	<select id="totalCount" resultType="int">
+		select count(*)
+		from report
+		<choose>
+       		<when test="user_id.equals('')">
+        		where 1=1
+       		</when>
+       		<otherwise>
+        		WHERE user_id=#{user_id}
+       		</otherwise>
+       	</choose>
+		<if test='searchType.equals("reason")'>
+       		AND report_reason like '%' || #{keyword} || '%'
+       	</if>
+       	<if test='searchType.equals("content")'>
+       		AND report_content like '%' || #{keyword} || '%'
+       	</if>
+       	<if test='searchType.equals("report_yn")'>
+       		AND report_yn like '%' || #{keyword} || '%'
+       	</if>
+	</select>
+	
+	<insert id="Reportadd">
+		insert into report(report_id, report_content, report_date, report_yn, report_reason, report_add, report_title, report_what, user_id, bad_user_id)
+		values(
+			(select max(report_id) from report)+1, #{report_content}, sysdate, 'y', #{report_reason}, #{report_add},#{report_title},#{report_what},#{user_id},#{bad_user_id}
+		)
+	</insert>
+	
+	<select id="detailItem" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+		SELECT * FROM REPORT 
+		WHERE REPORT_ID = #{report_id}
+	</select>
+	
+	<update id="updateReport">
+		update REPORT
+		set REPORT_YN = #{report_yn}
+		where REPORT_ID = #{report_id}
+	</update>
+<!-- 	
+	<select id="getNotice" resultType="kr.ddit.kixiv.report.vo.ReportVo">
+		select *s
+		from notice
+		where notice_id = #{notice_id}
+	</select>
+	
+	<insert id="write">
+		insert into notice(NOTICE_ID, NOTICE_TITLE, NOTICE_CONTENT, HIT, NOTICE_SDATE, ADMIN_ID)
+		values(
+			(select max(notice_id) from notice)+1, 
+			#{notice_title}, #{notice_content}, 0, sysdate, 'admin'
+		)
+	</insert>
+
+	<update id="modify">
+		update notice
+		set notice_title = #{notice_title}, notice_content = #{notice_content}
+		where notice_id = #{notice_id}
+	</update>
+
+	<delete id="delete">
+		delete from notice
+		where notice_id = #{notice_id}
+	</delete> -->
+
+	
+</mapper>

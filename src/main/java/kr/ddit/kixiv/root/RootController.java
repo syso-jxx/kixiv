@@ -8,12 +8,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import kr.ddit.kixiv.MyConfig;
 import kr.ddit.kixiv.blackUser.service.BlackUserService;
 import kr.ddit.kixiv.cmt.vo.CmtVo;
 import kr.ddit.kixiv.follow.service.FollowService;
@@ -48,6 +51,12 @@ public class RootController {
 	
 	@Autowired
 	GalleryService galleryService;
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		ApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
+	}
+	
 	
 	@RequestMapping(value="/")
 	String main(Model model, HttpSession session) {

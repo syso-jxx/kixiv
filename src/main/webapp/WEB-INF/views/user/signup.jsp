@@ -297,13 +297,14 @@ body {
 			$(this).removeClass("check_success");	
 			$(this).removeClass("check_fail");	
 			$("#tmpCheck_msg").text("")
-			
+
 			if($(this).val() != ''){
 				if($(this).val() == $("#tempKey").val()){
 					$(this).addClass("check_success");
 				}else{
 					$(this).addClass("check_fail");
 					$("#tmpCheck_msg").text("인증번호가 일치하지 않습니다.")
+
 				}
 			}
 		});
@@ -368,6 +369,7 @@ body {
 				confirmButtonText:"확인"
 			});
 			user_id.focus();
+
 			return;
 		}
 		if(!password.classList.contains("check_success")){
@@ -466,6 +468,8 @@ body {
         param += "&add2=" + add2.value;
         param += "&sns_add=" + sns_add.value;
         param += "&user_level=" + user_level;
+
+
         
 	    $.ajax({
 	        url: "signup",
@@ -492,7 +496,7 @@ body {
 	        	}
 	        },
 	        error: function(){
-	            alert("실패ㅜㅜ err");
+	            alert("회원가입 실패");
 	        }
 	    });
 	}

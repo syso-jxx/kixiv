@@ -7,7 +7,7 @@ import kr.ddit.kixiv.tagList.vo.TagListVo;
 
 public interface TagListService {
 
-	void tagListIns(TagListVo tagList);
+	void insertTagWithSeq(String tag_id, int board_id);
 
 	List<TagAllVo> tagData(int board_id);
 	

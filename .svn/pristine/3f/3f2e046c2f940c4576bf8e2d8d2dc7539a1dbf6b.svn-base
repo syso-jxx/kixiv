@@ -1,0 +1,179 @@
+package kr.ddit.kixiv.fund.controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
+
+import kr.ddit.kixiv.fund.service.FundService;
+import kr.ddit.kixiv.fund.vo.FundCodeVO;
+import kr.ddit.kixiv.fund.vo.FundVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class FundController {
+	@Autowired
+	FundService service;
+
+	@Resource(name = "uploadPath")
+	private String uploadPath;
+
+	@RequestMapping(value = "/funding", method = RequestMethod.GET)
+	public ModelAndView funding(@RequestParam Map<String, Object> map, ModelAndView mav) {
+		String fundCode = (String) map.get("fund_code") == null ? "all" : (String) map.get("fund_code");
+
+		map.put("fundCode", fundCode);
+
+		List<Map<String, Object>> fundList = this.service.getFundList(map);
+		List<FundCodeVO> codeList = this.service.selectCodeList();
+
+		mav.addObject("fundList", fundList);
+		mav.addObject("codeList", codeList);
+		mav.setViewName("funding");
+
+		return mav;
+	}
+
+	@RequestMapping(value = "/fundDetail", method = RequestMethod.GET)
+	public ModelAndView fundDetail(HttpSession session, @RequestParam Map<String, Object> map, ModelAndView mav)
+			throws Exception {
+		String fundId = (String) map.get("fund_id") == null ? null : (String) map.get("fund_id");
+		String fundCode = (String) map.get("fund_code") == null ? null : (String) map.get("fund_code");
+
+		if (fundId == null) {
+			mav.setViewName("redirect:/funding");
+			return mav;
+		}
+
+		map.put("fundId", fundId);
+
+		FundVO fund = this.service.selectFundVO(map);
+		List<Map<String, Object>> fundPicList = this.service.selectFundPicList(map);
+		List<FundCodeVO> codeList = this.service.selectCodeList();
+
+		mav.addObject("fund", fund);
+		mav.addObject("fundCode", fundCode);
+		mav.addObject("fundPicList", fundPicList);
+		mav.addObject("codeList", codeList);
+		mav.setViewName("fundDetail");
+		return mav;
+	}
+
+	@RequestMapping(value = "/fundWrite", method = RequestMethod.GET)
+	public ModelAndView fundWrite(@RequestParam Map<String, Object> map, ModelAndView mav) throws Exception {
+		List<FundCodeVO> codeList = this.service.selectCodeList();
+
+		mav.addObject("codeList", codeList);
+		mav.setViewName("fundWrite");
+		return mav;
+	}
+
+	@RequestMapping(value = "/fundWrite", method = RequestMethod.POST)
+	String uploadTest(MultipartHttpServletRequest mtfRequest, HttpSession session) throws Exception {
+		Map<String, Object> fundMap = new HashMap<String, Object>();
+		
+		int fundId = this.service.selectMaxFundId()+1;
+
+		String userId = (String) session.getAttribute("userId");
+
+		String sdate = (String) mtfRequest.getParameter("sdate");
+		String edate = (String) mtfRequest.getParameter("edate");
+		String achieve = (String) mtfRequest.getParameter("achieve").replace(",", "");
+		String one_price = (String) mtfRequest.getParameter("one_price").replace(",", "");
+		String fundCode = (String) mtfRequest.getParameter("fundCode");
+		String fund_title = (String) mtfRequest.getParameter("fund_title");
+		String fund_content = (String) mtfRequest.getParameter("fund_content");
+
+		fundMap.put("userId", userId);
+		fundMap.put("fundId", fundId);
+		fundMap.put("sdate", sdate);
+		fundMap.put("edate", edate);
+		fundMap.put("achieve", achieve);
+		fundMap.put("one_price", one_price);
+		fundMap.put("fundCode", fundCode);
+		fundMap.put("fund_title", fund_title);
+		fundMap.put("fund_content", fund_content);
+		fundMap.put("fund_zip", "12345");
+		//==========TODO 주소 검색 및 주소 삽입 기능 넣어야함===============
+		fundMap.put("fund_add1", "테스트용 주소1");
+		fundMap.put("fund_add2", "테스트용 주소2");
+		fundMap.put("place_tel", "123-4567");
+
+		System.out.println("userId = " + userId);
+		System.out.println("maxFundId : " + fundId);
+		System.out.println("sdate : " + sdate + " / edate : " + edate + " / achieve : " + achieve + " / one_price : "
+				+ one_price + " / fundCode : " + fundCode);
+		System.out.println("fund_title : " + fund_title + " / fund_content : " + fund_content);
+		
+
+		int insertFundResult = this.service.insertFund(fundMap);
+
+		if (insertFundResult != 0) {
+			System.out.println("========fund 추가 완료========");
+
+			List<MultipartFile> fileList = mtfRequest.getFiles("files");
+
+			String path = uploadPath + File.separator + "fundImgUpload" + File.separator;
+
+			for (MultipartFile mf : fileList) {
+				String originFileName = mf.getOriginalFilename(); // 원본 파일 명
+				long fileSize = mf.getSize(); // 파일 사이즈
+
+				Map<String, Object> fileMap = new HashMap<String, Object>();
+
+				if (fileSize == 0) {
+					continue;
+				}
+				
+				String chName = System.currentTimeMillis() + "_" + originFileName;
+
+				String safeFile = path + chName;
+				String picPath = File.separator + "fundImgUpload" + File.separator + chName;
+
+				System.out.println("picNum : " + fundId);
+				System.out.println("picPath : " + picPath);
+				System.out.println("originFileName : " + originFileName);
+				System.out.println("fileSize : " + fileSize);
+
+				fileMap.put("picPath", picPath);
+				fileMap.put("picName", originFileName);
+				fileMap.put("fundId", fundId);
+
+			    int insertPicResult = this.service.insertFundPicture(fileMap);
+			    
+			    if (insertPicResult != 0) {
+			    	System.out.println("========fundPicture 추가 완료========");
+			    	try {
+						mf.transferTo(new File(safeFile));
+					} catch (IllegalStateException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			    } else {
+			    	System.out.println("글 작성 도중 에러가 발생했습니다.");
+			    	return "redirect:/funding";
+			    }
+			}
+		} else {
+			System.out.println("글 작성 도중 에러가 발생했습니다.");
+			return "redirect:/funding";
+		}
+		return "redirect:/fundDetail?fund_id="+fundId+"&fund_code="+fundCode;
+	}
+}

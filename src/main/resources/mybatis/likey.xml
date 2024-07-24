@@ -9,15 +9,22 @@
 	    WHERE pic_num = #{pic_num}
 	</select>
 	
+	<!-- 좋아요 시퀀스 +1 -->
+	<select id="getNextHeartSeq" resultType="int">
+		SELECT IFNULL(MAX(like_seq), 0) + 1 AS nextLikeSeq FROM likey
+	</select>
+	
 	<!-- 좋아요 추가 -->
 	<insert id="heartUp">
 	    INSERT INTO likey (like_seq, user_id, pic_num)
-	    VALUES (
-	        (SELECT IFNULL(MAX(like_seq), 0) + 1 FROM likey),
-	        #{user_id},
-	        #{pic_num}
+	    VALUES (#{like_seq}, #{user_id}, #{pic_num}
 	    )
 	</insert>
+	<!-- 
+	    INSERT INTO likey (like_seq, user_id, pic_num, cmt_id, tocmt_id, fund_id)
+	    VALUES (#{like_seq}, #{user_id}, #{pic_num}, #{cmt_id}, #{tocmt_id}, #{fund_id}
+	    )
+	 -->
 		
 	<!-- 좋아요 삭제 -->
 	<delete id="heartDown">

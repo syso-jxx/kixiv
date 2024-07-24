@@ -1,0 +1,172 @@
+package kr.ddit.kixiv.fileUpload.controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import kr.ddit.kixiv.picboard.service.PicBoardService;
+import kr.ddit.kixiv.picboard.vo.Picboard;
+import kr.ddit.kixiv.picture.service.PictureService;
+import kr.ddit.kixiv.picture.vo.Picture;
+import kr.ddit.kixiv.tag.service.TagService;
+import kr.ddit.kixiv.tag.vo.TagVo;
+import kr.ddit.kixiv.tagList.service.TagListService;
+import kr.ddit.kixiv.tagList.vo.TagListVo;
+import kr.ddit.kixiv.user.vo.User;
+import kr.ddit.kixiv.utill.UploadFileUtils;
+
+
+
+@Controller
+public class FileUploadController {
+	List<String> filelist   = new ArrayList<String>();
+	List<String> pathList = new ArrayList<String>();
+	List<String> thumList= new ArrayList<String>();
+	
+	@Autowired
+	public PictureService pictureService;
+	
+	@Autowired
+	public PicBoardService picboardService;
+	
+	@Autowired
+	public TagListService tagListService;
+	
+	@Autowired
+	public TagService tagService;
+	
+
+	@Resource(name = "uploadPath")
+	private String uploadPath;
+
+	
+	@RequestMapping(value = "/fileUpload")
+    public String dragAndDrop(Model model) {
+		List<TagVo> tag = tagService.list();
+		model.addAttribute("tag",tag);
+		filelist.clear();
+    	pathList.clear();
+    	thumList.clear();
+        return "fileUpload";
+        
+    }
+	
+	@RequestMapping(value="/filedelete")
+	  public String filedelete() {
+		System.out.println("ㅎㅇ");
+    	filelist.clear();
+    	pathList.clear();
+    	thumList.clear();
+    	System.out.println("성공");
+    	System.out.println(filelist.size());
+    	System.out.println(pathList.size());
+    	System.out.println(thumList.size());
+		return "";
+	  }
+	
+    @SuppressWarnings("unused")
+	@RequestMapping(value ="/fileUpload/post", method = RequestMethod.POST) //ajax에서 호출하는 부분
+    public String upload(Picture pic, MultipartFile file, HttpSession session)  throws Exception { //Multipart로 받는다.
+    	String pureImage = file.getOriginalFilename();
+    	String imgUploadPath = uploadPath + File.separator + "imgUpload";
+    	String ymdPath = UploadFileUtils.calcPath(imgUploadPath);
+    	String fileName = null;
+
+    	if(file != null) {
+    		
+    	 fileName = UploadFileUtils.fileUpload(imgUploadPath, file.getOriginalFilename(), file.getBytes(), ymdPath); 
+    	} else {
+    	 fileName = uploadPath + File.separator + "images" + File.separator + "none.png";
+    	}
+    	filelist.add(pureImage);
+    	pathList.add(File.separator + "imgUpload" + ymdPath + File.separator + fileName);
+    	thumList.add(File.separator + "imgUpload" + ymdPath + File.separator + "s" + File.separator + "s_" + fileName);
+    	
+    	return "redirect:/fileUpload";
+    }
+    
+    
+    @RequestMapping(value = "/fileUpload", method = RequestMethod.POST)
+    public String boardUp(Picture pic, Picboard board,TagListVo tagList, HttpSession session, HttpServletRequest req) {
+    	String[] arr = req.getParameterValues("myBtn");
+    	User user = (User)req.getSession().getAttribute("user");
+    	board.setUser_id(user.getUser_id());
+    	pic.setUser_id(user.getUser_id());
+    	System.out.println(pic.getUser_id());
+    	picboardService.boradUp(board);
+    	
+    	int boradid = picboardService.boarditem();
+    	pic.setBoard_id(boradid);
+    	
+    	for(int i = 0; i<filelist.size(); i++) {
+    		pic.setPic_name(filelist.get(i));
+    		pic.setPic_path(pathList.get(i));
+    		pic.setThum_name(thumList.get(i));
+    		pictureService.fileupdate(pic);
+    	}
+    	
+    	if(arr.length > 0) {
+    		tagList.setBoard_id(boradid);
+    		for(int i = 0; i<arr.length; i++) {
+    			tagList.setTag_id(arr[i]);
+    			tagListService.tagListIns(tagList);
+    		}
+    	}
+    	    	
+    	filelist.clear();
+    	pathList.clear();
+    	thumList.clear();
+    	
+    	return "redirect:/fileUpload";
+    }
+    
+    //예시 파일 업로드
+    @RequestMapping(value = "/galleryFileUpload", method = RequestMethod.GET)
+    String galleryFileUpload() {
+    	
+    	return "galleryFileUpload";
+    }
+    
+    @RequestMapping(value = "/galleryFileUploads")
+    String galleryFile(MultipartHttpServletRequest mtfRequest) {
+          MultipartFile mf = mtfRequest.getFile("file");
+
+          String path = uploadPath + File.separator + "imgGalleryUpload"+  File.separator;
+          System.out.println("path"+ path);
+          String originFileName = mf.getOriginalFilename(); // 원본 파일 명
+          long fileSize = mf.getSize(); // 파일 사이즈
+
+          System.out.println("originFileName : " + originFileName);
+          System.out.println("fileSize : " + fileSize);
+
+          String safeFile = path + System.currentTimeMillis() + originFileName;
+          System.out.println(safeFile);
+          try {
+              mf.transferTo(new File(safeFile));
+          } catch (IllegalStateException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+          } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+          }
+
+    	return "redirect:/galleryFileUpload";
+    }
+    
+}

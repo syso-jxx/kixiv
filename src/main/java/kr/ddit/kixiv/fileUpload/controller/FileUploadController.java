@@ -81,24 +81,28 @@ public class FileUploadController {
     }
 	
 	
-    @SuppressWarnings("unused")
-	@RequestMapping(value ="/fileUpload/post", method = RequestMethod.POST) //ajax에서 호출하는 부분
-    public String upload(Picture pic, MultipartFile file, HttpSession session)  throws Exception { //Multipart로 받는다.
-    	String pureImage = file.getOriginalFilename();
-    	String imgUploadPath = uploadPath + File.separator + "imgUpload";
-    	String ymdPath = UploadFileUtils.calcPath(imgUploadPath);
-    	String fileName = null;
+	@SuppressWarnings("unused")
+    @RequestMapping(value ="/fileUpload/post", method = RequestMethod.POST)
+    public String upload(Picture pic, MultipartFile file, HttpSession session) throws Exception {
+        String pureImage = file.getOriginalFilename();
+        String imgUploadPath = uploadPath + File.separator + "imgUpload";
+        String ymdPath = UploadFileUtils.calcPath(imgUploadPath);
+        String fileName = null;
 
-    	if(file != null) {
-    	 fileName = UploadFileUtils.fileUpload(imgUploadPath, file.getOriginalFilename(), file.getBytes(), ymdPath); 
-    	} else {
-    	 fileName = uploadPath + File.separator + "images" + File.separator + "none.png";
-    	}
-    	filelist.add(pureImage);
-    	pathList.add(File.separator + "imgUpload" + ymdPath + File.separator + fileName);
-    	thumList.add(File.separator + "imgUpload" + ymdPath + File.separator + "s" + File.separator + "s_" + fileName);
-    	
-    	return "ok";
+        System.out.println("imgUploadPath" + imgUploadPath);
+        System.out.println("ymdPath" + ymdPath);
+        System.out.println("fileName");
+
+        if(file != null) {
+            fileName = UploadFileUtils.fileUpload(imgUploadPath, file.getOriginalFilename(), file.getBytes(), ymdPath); 
+        } else {
+            fileName = uploadPath + File.separator + "images" + File.separator + "none.png";
+        }
+        filelist.add(pureImage);
+        pathList.add(File.separator + "imgUpload" + ymdPath + File.separator + fileName);
+        thumList.add(File.separator + "imgUpload" + ymdPath + File.separator + "s" + File.separator + "s_" + fileName);
+
+        return "ok";
     }
     
     @RequestMapping(value = "/fileUpload", method = RequestMethod.POST)
@@ -108,8 +112,8 @@ public class FileUploadController {
     	User user = (User)req.getSession().getAttribute("user");
     	board.setUser_id(user.getUser_id());
     	pic.setUser_id(user.getUser_id());
+    	picboardService.boradSelect();
     	picboardService.boradUp(board);
-    	
     	int boradid = picboardService.boarditem();
     	pic.setBoard_id(boradid);
     	
@@ -119,15 +123,14 @@ public class FileUploadController {
     		pic.setThum_name(thumList.get(i));
     		pictureService.fileupdate(pic);
     	}
-    	
     	if(arr.length > 0) {
     		tagList.setBoard_id(boradid);
     		for(int i = 0; i<arr.length; i++) {
     			tagList.setTag_id(arr[i]);
-    			tagListService.tagListIns(tagList);
+    			tagListService.insertTagWithSeq(tagList.getTag_id(), tagList.getBoard_id());
+    			//tagListService.tagListIns(tagList);
     		}
     	}
-    	    	
     	filelist.clear();
     	pathList.clear();
     	thumList.clear();
@@ -203,7 +206,7 @@ public class FileUploadController {
     		tagList.setBoard_id(boradid);
     		for(int i = 0; i<arr.size(); i++) {
     			tagList.setTag_id(arr.get(i));
-    			tagListService.tagListIns(tagList);
+    			tagListService.insertTagWithSeq(tagList.getTag_id(), tagList.getBoard_id());
     		}
     	}   	   	
     	pic.setUser_id(user.getUser_id());

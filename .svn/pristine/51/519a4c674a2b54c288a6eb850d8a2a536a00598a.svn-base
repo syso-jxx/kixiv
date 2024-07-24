@@ -1,0 +1,15 @@
+package kr.ddit.kixiv.follow.service;
+
+import kr.ddit.kixiv.follow.vo.FollowVo;
+
+public interface FollowService {
+
+	void followIng(FollowVo follow);
+
+	void unFollowIng(FollowVo follow);
+
+	int followYn(FollowVo follow);
+
+
+
+}

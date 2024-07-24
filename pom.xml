@@ -289,6 +289,19 @@
 					<mainClass>org.test.int1.Main</mainClass>
 				</configuration>
 			</plugin>
+			<plugin>
+	          <artifactId>maven-jar-plugin</artifactId>
+	          <version>3.0.2</version>
+	          <!-- manifest plugin -->
+	          <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>kr.ddit.kixiv.root</mainClass>
+                        </manifest>
+                    </archive>
+	          </configuration>
+				<!-- manifest plugin -->
+	        </plugin>
 		</plugins>
 	</build>
 </project>

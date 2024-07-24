@@ -1,0 +1,132 @@
+package kr.ddit.kixiv.gallery.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.ddit.kixiv.gallery.mapper.GalleryDao;
+import kr.ddit.kixiv.gallery.service.GalleryService;
+import kr.ddit.kixiv.gallery.vo.GalleryRentVO;
+import kr.ddit.kixiv.gallery.vo.GalleryVO;
+import kr.ddit.kixiv.gallery.vo.RentCmtVO;
+import kr.ddit.kixiv.gallery.vo.RentVO;
+
+@Service
+public class GalleryServiceImpl implements GalleryService {
+	@Autowired
+	public GalleryDao dao;
+
+	@Override
+	public List<Map<String, Object>> getGalleryRentList(Map<String, Object> map) {
+		return dao.getGalleryRentList(map);
+	}
+
+	@Override
+	public int selectCount() {
+		return dao.count();
+	}
+	
+	@Override
+	public int selectSearchCount(String keyword) {
+		return dao.selectSearchCount(keyword);
+	}
+
+	@Override
+	public RentVO getRentVO(Map<String, Object> map) {
+		return dao.getRentVO(map);
+	}
+
+	@Override
+	public List<RentCmtVO> getCmtVO(RentCmtVO cmtVO) {
+		List<RentCmtVO> rentCmtVO = dao.getCmtVO(cmtVO);
+		return rentCmtVO;
+	}
+
+	@Override
+	public void writeCmtVO(RentCmtVO cmtVO) {
+	   	 dao.writeCmtVO(cmtVO);
+	}
+
+	@Override
+	public void updCmtVO(RentCmtVO cmtVO) {
+		dao.updCmtVO(cmtVO);
+	}
+	@Override
+	public void delCmtVO(RentCmtVO cmtVO) {
+		dao.delCmtVO(cmtVO);
+	}
+	@Override
+	public void replyWriteCmtVO(RentCmtVO cmtVO) {
+		dao.replyWriteCmtVO(cmtVO);
+	}
+
+	@Override
+	public void replyUpdCmtVO(RentCmtVO cmtVO) {
+		dao.replyUpdCmtVO(cmtVO);
+	}
+
+	@Override
+	public void replyDelCmtVO(RentCmtVO cmtVO) {
+		dao.replyDelCmtVO(cmtVO);
+	}
+	
+	@Override
+	public void goodAndBadVO(RentCmtVO cmtVO) {
+		dao.goodAndBadVO(cmtVO);
+	}
+	
+	@Override
+	public void writeRentVO(RentVO rentVO) {
+		dao.writeRentVO(rentVO);
+	}
+	
+	// 갤러리 렌트 결제 리스트
+	@Override
+	public List<GalleryRentVO> getPayVO(GalleryRentVO galleryRentVO) {
+		return dao.getPayVO(galleryRentVO);
+	}
+	// 갤러리 렌트 결제
+	@Override
+	public int rentReqVO(GalleryRentVO galleryRentVO) {
+		return dao.rentReqVO(galleryRentVO);
+	}
+	// 갤러리 렌트 환불
+	@Override
+	public int rentRefundVO(GalleryRentVO galleryRentVO) {
+		return dao.rentRefundVO(galleryRentVO);
+	}
+
+	@Override
+	public List<GalleryVO> galleryList(String user_id) {
+		return dao.galleryList(user_id);
+	}
+
+	@Override
+	public GalleryVO addressCheck(String gallery_add1) {
+		return dao.addressCheck(gallery_add1);
+	}
+
+	@Override
+	public void addGallery(GalleryVO vo) {
+		dao.addGallery(vo);
+	}
+
+	@Override
+	public void modifyGallery(GalleryVO vo) {
+		dao.modifyGallery(vo);
+	}
+	
+	@Override
+	public GalleryVO myGalleryDetail(String gallery_num) {
+		return dao.myGalleryDetail(gallery_num);
+	}
+
+	@Override
+	public void deleteGallery(String gallery_num) {
+		dao.deleteGallery(gallery_num);
+	}
+
+
+}

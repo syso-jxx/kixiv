@@ -1,0 +1,640 @@
+package kr.ddit.kixiv.gallery.controller;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+import javax.print.attribute.standard.Severity;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.io.FileUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+//import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+//import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
+
+import com.google.gson.JsonObject;
+import com.siot.IamportRestClient.IamportClient;
+import com.siot.IamportRestClient.exception.IamportResponseException;
+import com.siot.IamportRestClient.response.IamportResponse;
+import com.siot.IamportRestClient.response.Payment;
+
+import kr.ddit.kixiv.cmt.vo.CmtVo;
+import kr.ddit.kixiv.cmt.vo.GoodBadCntVo;
+import kr.ddit.kixiv.gallery.service.GalleryRentPage;
+import kr.ddit.kixiv.gallery.service.GalleryService;
+import kr.ddit.kixiv.gallery.service.MyRentReqPage;
+//import kr.ddit.kixiv.gallery.service.PaymentCheck;
+import kr.ddit.kixiv.gallery.vo.GalleryRentVO;
+import kr.ddit.kixiv.gallery.vo.GalleryVO;
+import kr.ddit.kixiv.gallery.vo.RentCmtVO;
+import kr.ddit.kixiv.gallery.vo.RentVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class GalleryController {
+	@Autowired
+	GalleryService service;
+	
+	@Resource(name = "uploadPath")
+	private String uploadPath;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////갤러리 대여/////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////	
+	
+	private int size = 10;
+	
+	// 대여 갤러리 리스트 페이지 페이징 처리
+	
+	@RequestMapping(value = "/galleryRentEvent", method = RequestMethod.GET)
+	public ModelAndView galleryRentPage(@RequestParam Map<String, Object> map, ModelAndView mav) {
+		
+		String strPageNum = (String)map.get("pageNum") == null ? "1" : (String)map.get("pageNum");
+		String keyword = (String)map.get("keyword") == null ? "" : (String)map.get("keyword");
+
+		int total = this.service.selectCount();
+		int searchTotal = this.service.selectSearchCount(keyword);
+		int pageNum = Integer.parseInt(strPageNum);
+		map.put("pageNum", pageNum);
+		map.put("keyword", keyword);
+		
+		List<Map<String, Object>> galleryRentList = this.service.getGalleryRentList(map);
+		
+		mav.addObject("galleryRentList", new GalleryRentPage(total, searchTotal, pageNum, size, keyword, galleryRentList));
+		mav.setViewName("galleryRentEvent");
+		return mav;
+	}
+	
+	// 대여 갤러리 상세 페이지
+	@RequestMapping(value = "/galleryRentDetail", method = RequestMethod.GET)
+	public ModelAndView detailPage(@RequestParam Map<String, Object> map, ModelAndView mav) {
+		String rent_seq = (String)map.get("rent_seq");
+		map.put("rent_seq", rent_seq);
+		
+		Map<String, Object> rent = this.service.getRent(map);	
+		List<RentCmtVO> rentCmtVO = service.getCmtVO(map);
+		
+		mav.addObject("rent", rent);  		//일반글
+		mav.addObject("rentCmtVO", rentCmtVO);	//댓글
+		mav.setViewName("galleryRentDetail");
+		return mav;
+	}
+	
+	// 모댓글 등록 GET
+	@RequestMapping(value="/galleryRentCmtWrite", method = RequestMethod.GET)
+	public String writeCmt() {
+		return "galleryRentCmtWrite";
+	}
+	
+	//	모댓글 등록 POST
+	@RequestMapping(value = "/galleryRentCmtWrite", method = RequestMethod.POST)
+	public ModelAndView postWriteCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		// vo에 댓글이 담긴다.
+		// retSeq라는 변수를 설정 CmtVO에 들어가잇는 rentSeq 값을  삽입
+		int rent_seq = cmtVO.getRent_seq();	//부모글 기본키를 가져옴
+		cmtVO.setUser_id((String)session.getAttribute("userId"));	//로그인한 사용자를 vo에 넣음
+		// vo 에 담긴값을 getCmtVO에 넘기기
+		//values((select NVL(MAX(cmt_id),0) +1 from cmt), #{cmt_content}, sysdate, 'n', 0 , #{user_id}, 0, #{rent_seq})
+		service.writeCmtVO(cmtVO);	//댓글 입력
+		mav.setViewName("galleryRentDetail");	//setViewName() : 이곳으로 갈 경로설정(jsp)
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");	//이곳으로 갈 경로를 담음
+		redirectView.addStaticAttribute("rent_seq", rent_seq);	//갈 때 함께갈 데이터(name과 value) <= 부모글번호, map에 {"rent_seq":rent_seq}
+		mav.setView(redirectView);	//최종세팅
+		return mav;	//보냄
+	}
+	
+	// 모댓글 수정 GET
+	@RequestMapping(value="/galleryRentCmtUpdate", method = RequestMethod.GET)
+	public String updateCmt() {
+		return "galleryRentCmtUpdate";
+	}
+	
+	// 모댓글 수정 POST
+	@RequestMapping(value = "/galleryRentCmtUpdate", method = RequestMethod.POST)
+	public ModelAndView postUpdateCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		int rent_seq = cmtVO.getRent_seq();
+		cmtVO.setUser_id((String)session.getAttribute("userId"));
+		service.updCmtVO(cmtVO); // 댓글 수정
+		mav.setViewName("galleryRentDetail");
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");
+		redirectView.addStaticAttribute("rent_seq", rent_seq);
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 모댓글 삭제 GET
+	@RequestMapping(value="/galleryRentCmtDelete", method = RequestMethod.GET)
+	public String deleteCmt() {
+		return "galleryRentCmtDelete";
+	}
+	
+	//	모댓글 삭제 POST
+	@RequestMapping(value = "/galleryRentCmtDelete", method = RequestMethod.POST)
+	public ModelAndView postDeleteCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		int rent_seq = cmtVO.getRent_seq();
+		cmtVO.setUser_id((String)session.getAttribute("userId"));
+		service.delCmtVO(cmtVO); // 댓글 삭제
+		mav.setViewName("galleryRentDetail");
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");
+		redirectView.addStaticAttribute("rent_seq", rent_seq);
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 대댓글 등록 GET
+	@RequestMapping(value="/galleryRentCmtReWrite", method = RequestMethod.GET)
+	public String replyWriteCmt() {
+		return "galleryRentCmtReWrite";
+	}
+	
+	// 대댓글 등록 POST
+	@RequestMapping(value = "/galleryRentCmtReWrite", method = RequestMethod.POST)
+	public ModelAndView postReplyWriteCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		int rent_seq = cmtVO.getRent_seq();
+		cmtVO.setUser_id((String)session.getAttribute("userId"));
+		service.replyWriteCmtVO(cmtVO);	//대댓글 입력
+		mav.setViewName("galleryRentDetail");
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");
+		redirectView.addStaticAttribute("rent_seq", rent_seq);
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 대댓글 수정 GET
+		@RequestMapping(value="/galleryRentCmtReUpdate", method = RequestMethod.GET)
+		public String replyUpdateCmt() {
+			return "galleryRentCmtReUpdate";
+		}
+	
+	//	대댓글 수정	POST
+	@RequestMapping(value = "/galleryRentCmtReUpdate", method = RequestMethod.POST)
+	public ModelAndView postReplyUpdateCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		int rent_seq = cmtVO.getRent_seq();
+		cmtVO.setUser_id((String)session.getAttribute("userId"));
+		service.replyUpdCmtVO(cmtVO); // 대댓글 수정
+		mav.setViewName("galleryRentDetail");
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");
+		redirectView.addStaticAttribute("rent_seq", rent_seq);
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 대댓글 삭제 GET
+		@RequestMapping(value="/galleryRentCmtReDelete", method = RequestMethod.GET)
+		public String replyDeleteCmt() {
+			return "galleryRentCmtReDelete";
+		}
+	
+	//	대댓글 삭제 POST
+	@RequestMapping(value = "/galleryRentCmtReDelete", method = RequestMethod.POST)
+	public ModelAndView postReplyDeleteCmt(ModelAndView mav, RentCmtVO cmtVO, HttpSession session) {
+		int rent_seq = cmtVO.getRent_seq();
+		cmtVO.setUser_id((String)session.getAttribute("userId"));
+		service.replyDelCmtVO(cmtVO); // 대댓글 삭제
+		mav.setViewName("galleryRentDetail");
+		RedirectView redirectView = new RedirectView("/galleryRentDetail");
+		redirectView.addStaticAttribute("rent_seq", rent_seq);
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 좋아요/싫어요 클릭 시 수행 GET
+	@RequestMapping(value = "/galleryRentCmtStatus", method = RequestMethod.GET)
+	public String goodAndBad() {
+		return "galleryRentCmtStatus";
+	}
+	
+	// 좋아요/싫어요 클릭 시 수행 POST
+	@ResponseBody
+	@RequestMapping(value = "/galleryRentCmtStatus", method = RequestMethod.POST)
+	public ArrayList<GoodBadCntVo> gb_list(@RequestParam Map<String, Object> map, HttpSession session) {
+		int gb_status = Integer.parseInt((String)map.get("gb_status"));	// 좋아요 1 싫어요 2
+		int cmtId = Integer.parseInt((String)map.get("cmtId"));		// 댓글번호
+		String user_id = (String)session.getAttribute("userId");
+		RentCmtVO cmtVO = new RentCmtVO();
+		cmtVO.setGb_status(gb_status);
+		cmtVO.setCmt_id(cmtId);
+		cmtVO.setUser_id(user_id);
+		//머지문 실행 서비스
+		service.goodAndBadVO(cmtVO);
+		//좋아요 싫어요 정보를 담아올 리스트 생성
+		ArrayList<GoodBadCntVo> gb_list = new ArrayList();
+		//cntg --> 좋아요 갯수, cntb --> 싫어요 갯수
+		gb_list = service.gb_list(cmtVO);
+		
+		return gb_list;
+	}
+	
+	String rent_imp_uid;
+	
+	// 일반회원의 갤러리 대여 결제
+	private IamportClient api;
+	@ResponseBody
+	@RequestMapping(value="/verifyIamport/{imp_uid}")
+	public IamportResponse<Payment> paymentByImpUid(
+				Model model, Locale locale, HttpSession session, @RequestParam Map<String, Object> map,
+				@PathVariable(value= "imp_uid") String imp_uid)  // @PathVariable : URL 경로에 변수를 넣어주는 어노테이션
+				throws IamportResponseException, IOException	
+	{	
+		api = new IamportClient("5478977203813634","Nb2oM8tlAgcw3WJ8iBgFfB8nljX5tSRg3TEQ28cDoo9skTADvRiKsr8OL6UeYLv2FaSIj5lItvaOoLsT");
+		
+		rent_imp_uid = (String)imp_uid;
+		
+		return api.paymentByImpUid(imp_uid);
+	}
+	
+	// 일반회원의 갤러리 대여 신청 GET
+	@RequestMapping(value="/galleryRentReq", method=RequestMethod.GET)
+	public ModelAndView rentReq(ModelAndView mav, RentVO rentVO, HttpSession session, @RequestParam Map<String, Object> map) {
+		int rent_seq = rentVO.getRent_seq();
+		GalleryRentVO galleryRentVO = new GalleryRentVO();
+		String user_id = (String)session.getAttribute("userId");
+		rentVO.setRent_seq(rent_seq);
+		rentVO.setUser_id((String)session.getAttribute("userId"));
+		galleryRentVO.setRent_seq(rent_seq);
+		galleryRentVO.setUser_id(user_id);
+		List<GalleryRentVO> galleryRentUserVO = service.galleryRentUserVO(user_id);
+		map.put("rent_seq", rent_seq);
+		Map<String, Object> rent = service.getRent(map);
+		mav.addObject("rent", rent);
+		mav.addObject("galleryRentUserVO", galleryRentUserVO);
+		mav.addObject("galleryRentVO", galleryRentVO);
+		mav.addObject("rent_seq", rent_seq);
+		mav.setViewName("galleryRentReq");
+		return mav;
+	}
+	
+	// 일반회원의 갤러리 대여 신청 POST
+	@ResponseBody
+	@RequestMapping(value="/galleryRentReq", method=RequestMethod.POST)
+	public ModelAndView postRentReq(@RequestParam Map<String, Object> map,
+		HttpServletRequest request, ModelAndView mav, HttpSession session, GalleryRentVO galleryRentVO) {
+		String user_id = (String)session.getAttribute("userId");
+		galleryRentVO.setRent_imp_uid(rent_imp_uid);
+		galleryRentVO.setUser_id(user_id);
+		service.rentReqVO(galleryRentVO);
+		service.rentReqStVO(galleryRentVO);
+		Map<String, Object> rent= this.service.getRent(map);
+		List<GalleryRentVO> galleryRentUserVO = service.galleryRentUserVO(user_id);
+		mav.addObject("galleryRentVO", galleryRentVO);
+		mav.addObject("galleryRentUserVO", galleryRentUserVO);
+		mav.addObject("rent", rent);
+		mav.setViewName("galleryRentReq");
+		RedirectView redirectView = new RedirectView("/galleryRentReq");
+		mav.setView(redirectView);
+		return mav;
+	}
+	
+	// 대여 가능 갤러리 글쓰기 GET
+	@RequestMapping(value="/galleryRentWrite", method = RequestMethod.GET)
+	public String writeRentVO() {
+		return "/galleryRentWrite";
+	}
+	
+	// 대여 가능 갤러리 글쓰기 POST
+	@RequestMapping(value="/galleryRentWrite", method = RequestMethod.POST)
+	public String postWrite(RentVO rentVO) {
+
+		service.writeRentVO(rentVO);
+		return "redirect:/galleryRentEvent";
+	}
+	
+	// 대여 가능 갤러리 글쓰기
+	@RequestMapping(value="/uploadSummernoteRentImageFile", produces = "application/json; charset=utf8")
+	@ResponseBody
+	public String uploadSummernoteImageFile(@RequestParam("file") MultipartFile multipartFile, HttpServletRequest request )  {
+		JsonObject jsonObject = new JsonObject();
+        /*
+		 * String fileRoot = "C:\\summernote_image\\"; // 외부경로로 저장을 희망할때.
+		 */
+		String fileRoot = "D:\\springProject\\kixiv\\src\\main\\webapp\\resources\\summernote\\fileUpload\\";
+		// 내부경로로 저장
+		String originalFileName = multipartFile.getOriginalFilename();	//오리지날 파일명
+		String extension = originalFileName.substring(originalFileName.lastIndexOf(".")); //파일 확장자
+		String savedFileName = UUID.randomUUID() + extension;	//저장될 파일 명
+		
+		File targetFile = new File(fileRoot + savedFileName);	
+		try {
+			InputStream fileStream = multipartFile.getInputStream();
+			FileUtils.copyInputStreamToFile(fileStream, targetFile); //파일 저장
+			jsonObject.addProperty("url", "/fileUpload/"+savedFileName); // contextroot + resources + 저장할 내부 폴더명
+			jsonObject.addProperty("responseCode", "success");
+				
+		} catch (IOException e) {
+			FileUtils.deleteQuietly(targetFile);	//저장된 파일 삭제
+			jsonObject.addProperty("responseCode", "error");
+			e.printStackTrace();
+		}
+		String a = jsonObject.toString();
+		return a;
+	}
+	
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////갤러리 마이페이지////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////	
+	
+	
+	// 갤러리 리스트
+	@RequestMapping(value = "/myGalleryList")
+	String myGalleryList(Model model, HttpSession session) {
+		
+		String user_id = (String)session.getAttribute("userId");
+		
+		System.out.println("user_id : " + user_id);
+		
+		List<GalleryVO> myGalleryList = service.galleryList(user_id);
+
+		model.addAttribute("list", myGalleryList);
+		
+		return "/myGalleryList";
+	}
+	
+	// 갤러리 상세
+	@RequestMapping(value = "/myGalleryDetail")
+	String myGalleryDetail(@RequestParam String gallery_num, Model model) {
+		
+		GalleryVO vo = service.myGalleryDetail(gallery_num);
+		
+		model.addAttribute("galleryVO", vo);
+		
+		return "/myGalleryDetail";
+	}
+
+	// 갤러리 추가
+	@RequestMapping(value = "/addGallery")
+	String addGallery() {
+		return "/addGallery";
+	}
+
+	// 갤러리 추가
+	@RequestMapping(value = "/addGallery", method = RequestMethod.POST)
+	String postAddGallery(GalleryVO vo) {
+		
+		System.out.println("getGallery_name : " + vo.getGallery_name());
+		System.out.println("getGallery_tel : " + vo.getGallery_tel());
+		System.out.println("getGallery_intro : " + vo.getGallery_intro());
+		System.out.println("getHomepage : " + vo.getHomepage());
+		System.out.println("getGallery_zip : " + vo.getGallery_zip() );
+		System.out.println("getGallery_add1 : " + vo.getGallery_add1());
+		System.out.println("getGallery_add2 : " + vo.getGallery_add2());
+		System.out.println("getGallery_img : " + vo.getGallery_img());
+		System.out.println("getUser_id : " + vo.getUser_id());
+		
+		service.addGallery(vo);
+		
+		return "redirect:/myGalleryList";
+	}
+	
+	// 갤러리 이미지 추가
+	@RequestMapping(value = "/galleryImgUpload", method = RequestMethod.POST)
+	@ResponseBody
+	String profileFile(MultipartHttpServletRequest mtfRequest, HttpSession session, HttpServletRequest req) {
+
+		MultipartFile mf = mtfRequest.getFile("file");
+		
+		String path = uploadPath + File.separator + "imgGalleryUpload" + File.separator;
+		
+		File fileDir = new File(path);
+		
+		// 폴더 존재 여부 확인
+		if(!fileDir.exists()) {
+			fileDir.mkdirs();
+		}
+		
+		String originFileName = mf.getOriginalFilename(); // 원본 파일 명
+		System.out.println("originFileName : " + originFileName);
+
+		//시연 전까지 이미지 파일 이름 앞 난수 제거
+//		String saveFileName = String.format("%d_%s", System.currentTimeMillis(), originFileName);
+		String saveFileName = String.format("%s", originFileName);
+		System.out.println("saveFileName : " + saveFileName);
+		
+		long fileSize = mf.getSize(); // 파일 사이즈
+		System.out.println("fileSize : " + fileSize);
+		
+		String gallery_img = String.format("imgGalleryUpload/%s", saveFileName);
+		System.out.println("gallery_img : " + gallery_img);
+		
+		try {
+			// 용량이 크고 많을 경우 유리..
+			FileUtils.writeByteArrayToFile(new File(path, saveFileName), mf.getBytes());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return gallery_img; 
+	}
+	
+	// 주소 중복 체크
+	@RequestMapping(value="/addressCheck", method = RequestMethod.POST)
+	@ResponseBody
+	public String addressCheck(@RequestParam String gallery_add1,
+		@RequestParam(value="old_add", required = false, defaultValue = "") String old_add) {
+	
+		String msg = "";
+		System.out.println("old_add : " + old_add);
+		GalleryVO vo = service.addressCheck(gallery_add1);
+		
+		if(vo == null){
+			msg = "ok";
+		}else {
+			if(old_add != "") {
+				if(vo.getGallery_add1().contentEquals(old_add)) {
+					msg = "ok";
+				}else {
+					msg = "ng";
+				}
+			}else {
+				msg = "ng";
+			}
+		}
+		System.out.println(msg);
+		return msg;
+	}
+
+	// 갤러리 수정
+	@RequestMapping(value = "/modifyGallery")
+	String modifyGallery(@RequestParam String gallery_num, Model model) {
+		
+		GalleryVO vo = service.myGalleryDetail(gallery_num);
+		model.addAttribute("galleryVO", vo);
+		
+		return "/modifyGallery";
+	}
+	
+	// 갤러리 수정 post
+	@RequestMapping(value = "/modifyGallery", method = RequestMethod.POST)
+	String postModifyGallery(GalleryVO vo) {
+		
+		System.out.println("갤러리 수정 컨트롤러");
+		System.out.println("getGallery_num : " + vo.getGallery_num());
+		System.out.println("getGallery_name : " + vo.getGallery_name());
+		System.out.println("getGallery_tel : " + vo.getGallery_tel());
+		System.out.println("getGallery_intro : " + vo.getGallery_intro());
+		System.out.println("getHomepage : " + vo.getHomepage());
+		System.out.println("getGallery_zip : " + vo.getGallery_zip() );
+		System.out.println("getGallery_add1 : " + vo.getGallery_add1());
+		System.out.println("getGallery_add2 : " + vo.getGallery_add2());
+		System.out.println("getGallery_img : " + vo.getGallery_img());
+		System.out.println("getUser_id : " + vo.getUser_id());
+		
+		service.modifyGallery(vo);
+		
+		return "redirect:/myGalleryList";
+	}
+	
+	// 갤러리 삭제(delete_yn => y변경)
+	@RequestMapping(value = "/deleteGallery")
+	String deleteGallery(@RequestParam String gallery_num, Model model) {
+		System.out.println("getGallery_num : " + gallery_num);
+		service.deleteGallery(gallery_num);
+		
+		return "redirect:/myGalleryList";
+	}
+	
+	// 갤러리 회원 대관 목록 
+	@RequestMapping(value = "/myGalleryRent")
+	String MyGalleryRent(@RequestParam Map<String, Object> map, Model model, HttpSession session) {
+		
+		System.out.println("갤러리 회원 렌트 컨트롤러");
+		
+		
+		String user_id = (String)session.getAttribute("userId");
+		String strPageNum = (String)map.get("pageNum") == null ? "1" : (String)map.get("pageNum");
+		String keyword = (String)map.get("keyword") == null ? "" : (String)map.get("keyword");
+		map.put("user_id", user_id);
+		map.put("keyword", keyword);
+		
+		int total = this.service.totalCount(map);
+		System.out.println("total : " + total);
+
+		//		int searchTotal = this.service.selectSearchCount(keyword);
+		int pageNum = Integer.parseInt(strPageNum);
+		map.put("pageNum", pageNum);
+		List<Map<String, Object>> list = this.service.myGalleryRent(map);
+		
+		model.addAttribute("rent_period_start", map.get("rent_period_start"));
+		model.addAttribute("rent_period_end", map.get("rent_period_end"));
+		model.addAttribute("myGalleryRent", new GalleryRentPage(total, total, pageNum, size, keyword, list));
+		return "myGalleryRent";
+	}
+	
+	// 일반회원의 대여 중인 갤러리 목록
+	@RequestMapping(value = "/myGalleryRentReqList")
+	ModelAndView MyGalleryRentReq(@RequestParam Map<String, Object> map, ModelAndView mav, HttpSession session) {
+		System.out.println("myGalleryRentReqList 컨트롤러");
+
+		String strPageNum = (String)map.get("pageNum") == null ? "1" : (String)map.get("pageNum");
+		String keyword = (String)map.get("keyword") == null ? "" : (String)map.get("keyword");
+		String user_id = (String)session.getAttribute("userId");
+		map.put("user_id", user_id);
+		map.put("keyword", keyword);
+		
+		int total = this.service.getMyRentReqListCnt(map);
+		System.out.println("total : " + total);
+		
+		int pageNum = Integer.parseInt(strPageNum);
+		map.put("pageNum", pageNum);
+		List<Map<String, Object>> myRentReqList = this.service.getMyRentReqList(map);
+		
+		mav.addObject("rent_period_start", map.get("rent_period_start"));
+		mav.addObject("rent_period_end", map.get("rent_period_end"));
+		mav.addObject("myRentReqList", new GalleryRentPage(total, total, pageNum, size, keyword, myRentReqList));
+		mav.setViewName("myGalleryRentReqList");
+		return mav;
+	}
+	
+	// 일반회원의 갤러리 대여 상세
+	@RequestMapping(value = "/myGalleryRentReceipt")
+	public String postCancel(HttpSession session, Model model, String rent_num, GalleryRentVO galleryRentVO) throws Exception {
+		String user_id = (String)session.getAttribute("userId");
+//		galleryRentVO.setUser_id(user_id);
+		galleryRentVO = service.oneitemPick(rent_num);
+		model.addAttribute("detail", galleryRentVO);
+		return "myGalleryRentReceipt";
+	}
+	
+	@RequestMapping(value="/galleryRentRefund", method=RequestMethod.POST)
+	@ResponseBody
+	public ModelAndView postRentRefund(@RequestParam Map<String, Object> map,
+		HttpServletRequest request, ModelAndView mav, HttpSession session, GalleryRentVO galleryRentVO) {
+		
+		return mav;
+	}
+	
+	// 환불 토큰 받아오기
+	public String getToken(HttpServletRequest request, HttpServletResponse response, JSONObject json, String requestURL) throws Exception{
+		// requestURL 아임포트 고유키, 시크릿 키 정보를 포함하는 url 정보 
+		String _token = "";
+		try{
+			String requestString = "";
+			URL url = new URL(requestURL);
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setDoOutput(true); 				
+			connection.setInstanceFollowRedirects(false);  
+			connection.setRequestMethod("POST");
+			connection.setRequestProperty("Content-Type", "application/json");
+			OutputStream os= connection.getOutputStream();
+			os.write(json.toString().getBytes());
+			connection.connect();
+			StringBuilder sb = new StringBuilder(); 
+			if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+				String line = null;  
+				while ((line = br.readLine()) != null) {  
+					sb.append(line + "\n");  
+				}
+				br.close();
+				requestString = sb.toString();
+			}
+			os.flush();
+			connection.disconnect();
+
+			JSONParser jsonParser = new JSONParser();
+			JSONObject jsonpObj = (JSONObject) jsonParser.parse(requestString);
+
+			if((Long)jsonpObj.get("code")  == 0){
+				JSONObject getToken = (JSONObject) jsonpObj.get("response");
+				System.out.println("getToken==>>"+getToken.get("access_token") );
+				_token = (String)getToken.get("access_token");
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();
+			_token = "";
+		}
+		return _token;
+	}
+}

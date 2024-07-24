@@ -9,7 +9,7 @@
 	</select>
 	
 	<insert id="signup">
-	    INSERT INTO USERS (
+	    INSERT INTO users (
 	        user_id, nickname, password, name, phone, zip, add1, add2, email, gallery_yn, profile_img, join_date, sns_add, exit_yn, user_level
 	    ) VALUES (
 	        #{user_id}, #{nickname}, #{password}, #{name}, #{phone}, #{zip}, #{add1}, #{add2}, #{email}, 

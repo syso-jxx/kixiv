@@ -32,7 +32,15 @@
             <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" style="height: 500px;">
                 <ol class="carousel-indicators" style="margin-top: 473px;">
                     <li data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"></li>
-	                <c:forEach begin="1" end="${fn:length(fundBannerList)-1}" varStatus="status">
+                    
+                    <c:set var="endValue" value="${fn:length(fundBannerList)-1}" />
+					<c:choose>
+					    <c:when test="${endValue <= 1}">
+					        <c:set var="endValue" value="1" />
+					    </c:when>
+					</c:choose>
+                    
+	                <c:forEach begin="1" end="${endValue}" varStatus="status">
 	                   	<li data-bs-target="#carouselExampleIndicators" data-bs-slide-to="${status.count}"></li>
 	                </c:forEach>
                 </ol>

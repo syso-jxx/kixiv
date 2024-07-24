@@ -16,6 +16,8 @@ public interface PicBoardService {
 	int boarditem();
 
 	void boradUp(Picboard board);
+	
+	int boradSelect();
 
 	String checkUser(int board_id);
 

@@ -256,8 +256,6 @@ textarea:focus {
 	var files;
 	arr = new Array();
 	
-
-	
 	//서브밋 예외처리
 	function submitCheck() {
 		$('.myBtn:checked').each(function(){
@@ -428,7 +426,45 @@ textarea:focus {
 			});
 		}
 	}//end function
+	
+	function sendFileToServer(formData, status) {
+	    var uploadURL = "/fileUpload/post"; //Upload URL  
+	    var extraData = {}; //Extra Data.
+	    var jqXHR = $.ajax({
+	        xhr : function() {
+	            var xhrobj = $.ajaxSettings.xhr();
+	            if (xhrobj.upload) {
+	                xhrobj.upload.addEventListener('progress', function(event) {
+	                    var percent = 0;
+	                    var position = event.loaded || event.position;
+	                    var total = event.total;
+	                    if (event.lengthComputable) {
+	                        percent = Math.ceil(position / total * 100);
+	                    }
+	                    status.setProgress(percent);
+	                }, false);
+	            }
+	            return xhrobj;
+	        },
+	        url : uploadURL,
+	        type : "POST",
+	        contentType : false,
+	        processData : false,
+	        cache : false,
+	        data : formData,
+	        success : function(data) {
+	            status.setProgress(100);
+	            //$("#status1").append("File upload Done<br>");           
+	        },
+	        error : function(jqXHR, textStatus, errorThrown) {
+	            console.log("Error: " + textStatus + ", " + errorThrown);
+	        }
+	    });
 
+	    status.setAbort(jqXHR);
+	}
+	
+/* 
 	function sendFileToServer(formData, status) {
 		var uploadURL = "/fileUpload/post"; //Upload URL  
 		var extraData = {}; //Extra Data.
@@ -464,7 +500,7 @@ textarea:focus {
 
 		status.setAbort(jqXHR);
 	}//end function
-
+ */
 	function fn_toggle() {
 		if ($('#ganre').val() == "other") {
 			$('#span1').hide();

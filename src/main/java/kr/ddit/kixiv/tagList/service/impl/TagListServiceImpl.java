@@ -2,6 +2,8 @@ package kr.ddit.kixiv.tagList.service.impl;
 
 import java.util.List;
 
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +17,12 @@ public class TagListServiceImpl implements TagListService {
 	@Autowired
 	TagListDao dao;
 	
-	@Override
-	public void tagListIns(TagListVo tagList) {
-		dao.tagListIns(tagList);
-
-	}
-
+    @Override
+    public void insertTagWithSeq(String tag_id, int board_id) {
+            int nextTagSeq = dao.getNextTagSeq();
+            dao.tagListIns(nextTagSeq, tag_id, board_id);
+    }
+	
 	@Override
 	public List<TagAllVo> tagData(int board_id) {
 		return dao.tagData(board_id);

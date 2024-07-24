@@ -78,7 +78,6 @@ public class UserController {
 	@ResponseBody
 	public String postSignup(User user) {
 		System.out.println("getUser_id : " + user);
-		
 		System.out.println("getUser_level : " + user.getUser_level());
 		System.out.println("전 " + user.getGallery_yn());
 		if(user.getUser_level().equals("g")) {

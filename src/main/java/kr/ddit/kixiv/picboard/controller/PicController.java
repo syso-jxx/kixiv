@@ -156,8 +156,6 @@ public class PicController {
 	     } catch (Exception e) {
 	         e.printStackTrace();
 	     }
-
-
 	
 }
 	void setDisposition(String filename, HttpServletRequest request, HttpServletResponse response) throws Exception {

@@ -3,7 +3,7 @@
 <mapper namespace="kr.ddit.kixiv.blackUser.mapper.BlackUserDao">
 	
 	<select id="blackList" resultType="kr.ddit.kixiv.blackUser.vo.BlackUserVO">
-	    select BLACK_NUM as blackNum, BLACK_REASON as blackReason, BLACK_DATE as blackDate, USER_ID as userId
+	    select black_num as blackNum, BLACK_REASON as blackReason, BLACK_DATE as blackDate, USER_ID as userId
 	    from(    
 	        select 
 	            BLACK_NUM,

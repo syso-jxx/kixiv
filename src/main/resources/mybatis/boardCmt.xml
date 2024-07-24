@@ -14,7 +14,7 @@
 	<!-- 댓글 리스트 가져오기 -->
 	<select id="picutre_replyList" resultType="kr.ddit.kixiv.cmt.vo.CmtVo">
 	    select r.cmt_id, r.board_id, r.grp, r.grpl, r.GRPS, r.user_id, r.cmt_content, DATE_FORMAT(r.cmt_date,'%Y-%m-%d') as cmt_date, DATEDIFF(NOW(), r.cmt_date) as wgap, u.profile_img, u.nickname 
-	    from CMT r left outer join users u
+	    from cmt r left outer join users u
 	        on r.user_id = u.user_id
 	    where r.board_id = #{board_id}
 	    order by grp asc, case when r.GRPS=0 then 999999999999 else r.GRPS end desc
